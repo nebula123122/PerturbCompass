@@ -6,7 +6,7 @@ PerturbCompass uses measured source-context perturbation profiles and a small ta
 
 [中文说明](README.zh-CN.md) · [Research history](docs/research_history.html) · [中文论文与文件导航](docs/project_overview_zh.html) · [Reproduction guide](docs/reproducibility.md) · [Methods](manuscript/methods.md) · [Results](manuscript/results.md)
 
-**Repository status:** reorganized research code and locked result tables, prepared for a first GitHub release. Publication metadata and a code license have not been selected. No paper acceptance or broad cross-study generalization claim is implied.
+**Repository status:** research code and locked result tables, available at [nebula123122/PerturbCompass](https://github.com/nebula123122/PerturbCompass). Publication metadata and a code license have not been selected. No paper acceptance or broad cross-study generalization claim is implied.
 
 **Quick start**
 

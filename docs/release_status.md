@@ -1,6 +1,6 @@
 # Release status
 
-This is a research repository prepared for GitHub upload. No repository has been created or published by the reorganization process.
+The initial research code and locked result tables are available at [nebula123122/PerturbCompass](https://github.com/nebula123122/PerturbCompass) on the `main` branch. Raw inputs, private recovery archives and authentication keys are excluded. Code licensing and author-controlled publication metadata remain pending.
 
 **Completed by the reorganization**
 
