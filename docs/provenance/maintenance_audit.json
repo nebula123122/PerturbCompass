@@ -55,5 +55,10 @@
   "registered_code_files_verified": 53,
   "numerical_hyperparameters_changed": false,
   "analysis_configurations_checked": 9,
-  "github_ci": "configured; check live workflow runs for execution results"
+  "github_ci": {
+    "tested_code_commit": "e6c6ae0cff8d36450687a2e4d73aaccfc7e09a14",
+    "url": "https://github.com/nebula123122/PerturbCompass/actions/runs/40804689079",
+    "ubuntu-latest": "success",
+    "windows-latest": "success"
+  }
 }

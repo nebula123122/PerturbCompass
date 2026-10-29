@@ -17,7 +17,7 @@ The initial research code and locked result tables are available at [nebula12312
 
 - Author names, affiliations, contact and contributor roles
 - Code license and permissions for third-party materials
-- Final paper title, publication citation and repository URL
+- Final paper title and publication citation (the repository URL is already configured)
 - Any required funding, conflicts and AI-use disclosure in the manuscript
 
 No author, license, paper DOI or approval has been invented. The absence of a license is not a grant of reuse rights. Data licenses remain those of the source studies. The repository preserves the existing Git history locally; the portable source archive omits it.
