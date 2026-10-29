@@ -6,6 +6,7 @@ protocol:
   analysis_type: prespecified_external_OOD_sensitivity_not_new_independent_study
   motivation: EL_PERTURB_2026_shows_random_few_shot_splits_can_mask_OOD_failure
 parent:
+  confirmation_config: configs/cd4t_confirmation.yaml
   confirmation_predownload_protocol: docs/provenance/cd4t_confirmation/predownload_protocol.yaml
   adopt_v36_final_eligibility_partition_genes_models_and_hyperparameters_unchanged: true
   use_v36_test_targets_only_for_evaluation: true

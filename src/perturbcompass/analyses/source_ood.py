@@ -35,7 +35,7 @@ def stratified_bootstrap_regret(selector_loss: np.ndarray, family_losses: np.nda
 
 def main() -> None:
     design = yaml.safe_load(CONFIG.read_text(encoding='utf-8'))
-    confirmation = yaml.safe_load(CONFIRMATION_CONFIG.read_text(encoding='utf-8'))
+    confirmation = yaml.safe_load(root_path(design['parent']['confirmation_config']).read_text(encoding='utf-8'))
     verify_seal(design)
     partition = pd.read_csv(root_path(design['outputs']['source_cluster_partition'])).sort_values('target').reset_index(drop=True)
     partition['target'] = partition['target'].astype(str).str.upper()

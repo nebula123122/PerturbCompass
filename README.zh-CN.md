@@ -14,6 +14,8 @@
 - `docs/research_history.html`：早期探索、失败、修订及完整原始记录，支持全文搜索
 - `docs/provenance/`：必要冻结证据、旧新路径对照和本次整理审计
 
+GitHub自动检查会在Linux和Windows上运行测试、证据校验及源码打包，不下载原始实验数据。服务器正式工作目录现在直接对应已发布的`main`分支，操作见 [Git与服务器说明](docs/repository_operations.md)。
+
 安装及使用见 [英文README](README.md) 与 [复现说明](docs/reproducibility.md)。测试和从结果表复算主结论不需要下载大体积原始数据。模型重跑写入 `results/reproduced/`，不会覆盖参考结果。
 
 当前目录中已去除历史探索runner、大体积无关数据、下载碎片和缓存。完整恢复归档位于主项目外；其私有位置记录不进入发布包。原始冻结记录正文仍保留历史编号，以便核对当时的协议与哈希。

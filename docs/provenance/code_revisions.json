@@ -1,0 +1,87 @@
+{
+  "classification": "post_result_code_maintenance_not_preregistration",
+  "revisions": [
+    {
+      "recorded_at_utc": "2026-10-29T01:55:37.683138+00:00",
+      "reason": "Repository audit: portable packaging, registered input contracts, canonical checkout and cross-platform CI; model formulas unchanged",
+      "base_commit": "8a9b8b2d5844cd8a50e5f667b6263f8d4126bdd4",
+      "previous_manifest_sha256": "4b703a695c4c003221df344e1c31ad117b01928e336e160272ced4a9b904f19d",
+      "changed_files": {
+        ".gitattributes": {
+          "before": null,
+          "after": "8f6a1f31843791a713e89d6a90020bc6fab557fa01ccf75f3eef2998b1ad56b3"
+        },
+        ".github/workflows/tests.yml": {
+          "before": null,
+          "after": "fdde68a528f507f8442350f99ed1672fcc5659bcff94b6606cb3fa49fbb5b9fb"
+        },
+        "environment.yml": {
+          "before": null,
+          "after": "9ad672b80678b72a0939f79026dabde646fbfa18d2f9813a286ddbad080b71b3"
+        },
+        "pyproject.toml": {
+          "before": null,
+          "after": "17305536bf5cb19870e8e44252067a787d166ed6e0d2e07bf6a68197d90fe8d5"
+        },
+        "scripts/download_data.py": {
+          "before": null,
+          "after": "66e6bb46f70a564d9756720c1404cc69eed454454bb90199863753ffdce38e5e"
+        },
+        "scripts/package_release.py": {
+          "before": null,
+          "after": "3d895aa5cfd5bade0a2e9a7b8a3c79f4f3390ca461b3a048fd4d36339607eb79"
+        },
+        "scripts/refresh_integrity_manifest.py": {
+          "before": null,
+          "after": "522b4cd61dc1118f969482211a15e5e7bdf393f014d5404f9f5a7701ed4e7e3c"
+        },
+        "src/perturbcompass/runtime.py": {
+          "before": "c99daa8ddbb26f6846d40e9f32e05cc5f04137109493168ac4898d324ea9eb8f",
+          "after": "e958197a02e99f7fd6e35a8d9f071c6b8be68c98f419d0d563ccee4b8f5dcbcc"
+        },
+        "tests/test_release_packaging.py": {
+          "before": null,
+          "after": "07d8b6d233116e46a617567e41743c6a19633ddee9b8ee60f66ca7bad42a7fa1"
+        },
+        "tests/test_runtime_contracts.py": {
+          "before": null,
+          "after": "18c1cbae8f8025dcead1a44a43906b590167d06bba343a3c5a8aef5fe447c804"
+        }
+      },
+      "historical_evidence_modified": false
+    },
+    {
+      "recorded_at_utc": "2026-10-29T02:02:55.256780+00:00",
+      "reason": "Register the actual confirmation dependencies for OOD/budget input verification and add regression coverage; numerical settings unchanged",
+      "base_commit": "8a9b8b2d5844cd8a50e5f667b6263f8d4126bdd4",
+      "previous_manifest_sha256": "ce2496012ce1c51ba0de0629b87aa7ce073831c9b488356cfa43504402dee12d",
+      "changed_files": {
+        "configs/anchor_budget.yaml": {
+          "before": "4bafbf7e59100ba087ce8ea5c3f421a7c9b0190b8a6cf0d67731867b011ad263",
+          "after": "3152ef346ebe08f047b643bcbbe86b8ab85f7e2a17adf4c08494802ea65c7397"
+        },
+        "configs/source_ood.yaml": {
+          "before": "5ef616f60408511464fe50dfd86bdd40a500bb68785957dc60298f326062dba4",
+          "after": "309177759d86b1fcf24eb5d5be3c6bf597f29a2663c4788217468b2ae45cf45a"
+        },
+        "src/perturbcompass/analyses/anchor_budget.py": {
+          "before": "cc1e998a4a32e3ed0577ed8383e61bcedd5b4df5992105be504d421ba467fa6a",
+          "after": "8f457245fd6031a60f7c841a03e0fb80092bfc90a55b336b13e31c7350484992"
+        },
+        "src/perturbcompass/analyses/source_ood.py": {
+          "before": "f5cad102f48f98edd4cbcc96e381bb4cf08443648ead82bab8a368436af26202",
+          "after": "87c4da27bfeeed2be7478b6cc3bd8c8c709499ad0157ead0fb2e6eec71569fa6"
+        },
+        "tests/test_analysis_dependencies.py": {
+          "before": null,
+          "after": "5b0a0ec3fbe561008ebec1837a9371a7864575da4199dc7f464351adfb7b3db9"
+        },
+        "tests/test_repository_integrity.py": {
+          "before": "0f77bbffe924529e78e7b84d6c1d2b749c5c271ca3f0e435f7c8222caa20181e",
+          "after": "6043c87a5fe6b2a3552fa9221ecc73d6d9941249d23c77bbc3c18620852e5554"
+        }
+      },
+      "historical_evidence_modified": false
+    }
+  ]
+}

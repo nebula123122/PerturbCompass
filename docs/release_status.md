@@ -10,6 +10,8 @@ The initial research code and locked result tables are available at [nebula12312
 - Original frozen protocols and amendments retained with their hashes
 - Raw input manifest and exclusion of large data, caches and download fragments from the release
 - Old-to-new path mapping, local recoverability and regression checks
+- One canonical server checkout connected to GitHub `main`
+- Linux/Windows CI, cross-platform release packaging and explicit code-maintenance records
 
 **Author-controlled items still unresolved**
 

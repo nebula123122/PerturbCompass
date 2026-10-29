@@ -1,0 +1,40 @@
+name: Paper code checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+      - name: Install package and tests
+        run: python -m pip install -e ".[test]"
+      - name: Scientific and engineering tests
+        run: python -m pytest -q
+      - name: Verify evidence and reference results
+        run: |
+          python -m perturbcompass verify
+          python -m perturbcompass results
+      - name: Check portable source packaging
+        run: python scripts/package_release.py --output ../PerturbCompass_source.zip

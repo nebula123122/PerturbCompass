@@ -18,4 +18,4 @@ def test_public_file_names_use_scientific_purpose():
     for folder in ['src', 'tests', 'configs', 'docs', 'results/reference', 'data/processed']:
         for path in (ROOT / folder).rglob('*'):
             if path.is_file() and '__pycache__' not in path.parts:
-                assert not re.search(r'(^|[/_.-])v\d+([/_.-]|$)', str(path.relative_to(ROOT)), re.I)
+                assert not re.search(r'(^|[/_.-])v\d+([/_.-]|$)', path.relative_to(ROOT).as_posix(), re.I)

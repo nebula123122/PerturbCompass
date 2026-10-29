@@ -1,7 +1,7 @@
-"""Paths and post-result integrity checks for the reorganized repository.
+"""Repository paths and post-result integrity checks.
 
-Historical frozen records are evidence, not current code signatures. Their bytes
-are verified separately from the explicitly dated refactor manifest.
+Historical evidence hashes remain separate from the current code manifest.
+Analysis entry points must execute registered code with their registered config.
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def digest(path: Path, algorithm: str = 'sha256') -> str:
 def verify_small_artifacts() -> dict[str, int]:
     counts = {}
     for name in ['reorganized_code_manifest.json', 'immutable_artifacts.json']:
-        manifest = json.loads((ROOT / 'docs/provenance' / name).read_text())
+        manifest = json.loads((ROOT / 'docs/provenance' / name).read_text(encoding='utf-8'))
         for relative, expected in manifest['files'].items():
             path = root_path(relative)
             if not path.is_relative_to(ROOT) or not path.is_file():
@@ -49,16 +49,20 @@ def _verified_raw(relative: str, size: int, mtime_ns: int, expected: str) -> boo
 
 
 def verify_raw_data(*, include_hashes: bool = False, required: set[str] | None = None) -> list[dict[str, Any]]:
-    manifest = json.loads((ROOT / 'data/manifest.json').read_text())
+    manifest = json.loads((ROOT / 'data/manifest.json').read_text(encoding='utf-8'))
+    entries = {entry['path']: entry for entry in manifest['files']}
+    if len(entries) != len(manifest['files']):
+        raise RuntimeError('Raw input manifest contains duplicate paths')
+    if required is not None:
+        unknown = required - set(entries)
+        if unknown:
+            raise RuntimeError('Unregistered raw input: ' + ', '.join(sorted(unknown)))
     report = []
-    for entry in manifest['files']:
-        relative = entry['path']
+    for relative, entry in entries.items():
         if required is not None and relative not in required:
             continue
         path = root_path(relative)
-        exists = path.is_file()
-        size_ok = exists and path.stat().st_size == entry['size_bytes']
-        if not size_ok:
+        if not path.is_relative_to(ROOT) or not path.is_file() or path.stat().st_size != entry['size_bytes']:
             raise RuntimeError(f'Missing or incomplete raw input: {relative}; see data/manifest.json')
         if include_hashes:
             stat = path.stat()
@@ -78,10 +82,25 @@ def _strings(value):
         yield value
 
 
+def _registered_file(value, files, role):
+    path = root_path(value)
+    if not path.is_relative_to(ROOT):
+        raise RuntimeError(f'Unregistered {role}: {path}')
+    relative = path.relative_to(ROOT).as_posix()
+    if relative not in files or not path.is_file() or digest(path) != files[relative]:
+        raise RuntimeError(f'Unregistered or modified {role}: {relative}')
+    return path
+
+
 def verify_migrated_inputs(runner, config_path, config):
     import yaml
 
     verify_small_artifacts()
+    files = json.loads((ROOT / 'docs/provenance/reorganized_code_manifest.json').read_text(encoding='utf-8'))['files']
+    _registered_file(runner, files, 'analysis runner')
+    config_file = _registered_file(config_path, files, 'analysis configuration')
+    if yaml.safe_load(config_file.read_text(encoding='utf-8')) != config:
+        raise RuntimeError('In-memory configuration differs from its registered file')
     required = set()
     seen = set()
 
@@ -91,8 +110,9 @@ def verify_migrated_inputs(runner, config_path, config):
                 required.add(token)
             elif token.startswith('configs/') and token.endswith('.yaml') and token not in seen:
                 seen.add(token)
-                inspect(yaml.safe_load(root_path(token).read_text()))
+                nested = _registered_file(token, files, 'parent configuration')
+                inspect(yaml.safe_load(nested.read_text(encoding='utf-8')))
 
     inspect(config)
-    verify_raw_data(include_hashes=True, required=required)
-    return {'classification': 'post_result_refactor_integrity_check', 'raw_inputs_verified': len(required)}
+    checked = verify_raw_data(include_hashes=True, required=required)
+    return {'classification': 'post_result_refactor_integrity_check', 'raw_inputs_verified': len(checked)}

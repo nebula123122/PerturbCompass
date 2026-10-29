@@ -5,6 +5,7 @@ protocol:
   stage: pre_v36_numeric_design
   analysis_type: prespecified_label_efficiency_sensitivity_within_external_study
 parent:
+  confirmation_config: configs/cd4t_confirmation.yaml
   confirmation_predownload_protocol: docs/provenance/cd4t_confirmation/predownload_protocol.yaml
   use_v36_eligible_targets_partition_genes_models_and_hyperparameters_unchanged: true
   use_only_v36_anchor_pool_for_all_training: true

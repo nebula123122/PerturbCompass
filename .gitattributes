@@ -1,0 +1,2 @@
+# Frozen evidence is byte-addressed; preserve committed bytes on every platform.
+* -text

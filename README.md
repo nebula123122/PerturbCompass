@@ -1,16 +1,20 @@
 # PerturbCompass
 
+[![Paper code checks](https://github.com/nebula123122/PerturbCompass/actions/workflows/tests.yml/badge.svg)](https://github.com/nebula123122/PerturbCompass/actions/workflows/tests.yml)
+
 Auditable few-shot calibration and model decisions for cross-context perturbation response transfer.
 
 PerturbCompass uses measured source-context perturbation profiles and a small target-context anchor set to choose or average five transparent calibration families. Anchor Probability Model Averaging (APMA) uses out-of-fold losses and bootstrap best-family frequencies. The evaluation target is regret relative to the best fixed candidate family, alongside replicate consistency, source-defined functional extrapolation and anchor-budget sensitivity.
 
-[中文说明](README.zh-CN.md) · [Research history](docs/research_history.html) · [中文论文与文件导航](docs/project_overview_zh.html) · [Reproduction guide](docs/reproducibility.md) · [Methods](manuscript/methods.md) · [Results](manuscript/results.md)
+[中文说明](README.zh-CN.md) · [Research history (HTML; download to view)](docs/research_history.html) · [中文论文与文件导航](docs/project_overview_zh.html) · [Reproduction guide](docs/reproducibility.md) · [Methods](manuscript/methods.md) · [Results](manuscript/results.md)
 
 **Repository status:** research code and locked result tables, available at [nebula123122/PerturbCompass](https://github.com/nebula123122/PerturbCompass). Publication metadata and a code license have not been selected. No paper acceptance or broad cross-study generalization claim is implied.
 
 **Quick start**
 
 ```bash
+git clone https://github.com/nebula123122/PerturbCompass.git
+cd PerturbCompass
 conda env create -f environment.yml
 conda activate perturbcompass
 python -m pip install --no-deps -e .
@@ -19,7 +23,7 @@ python -m perturbcompass results
 python -m perturbcompass verify
 ```
 
-The tests and result-table verification do not require the large raw inputs. `environment.yml` records the original analysis environment; `pyproject.toml` defines package installation and test discovery.
+The tests and result-table verification do not require the large raw inputs. GitHub Actions runs these checks on Linux and Windows without downloading experimental raw data. `environment.yml` records the original analysis environment; `pyproject.toml` defines package installation and test discovery.
 
 **Paper analyses**
 
@@ -37,6 +41,10 @@ The tests and result-table verification do not require the large raw inputs. `en
 | `anchor_budget` | Nested 32/64/128/256-anchor sensitivity on the same held-out targets |
 
 List analyses with `python -m perturbcompass analyses`. Reproduce one with `python -m perturbcompass run cd4t_confirmation`. Reproduction writes to `results/reproduced/`; locked reference tables are kept separately in `results/reference/`.
+
+**Development and integrity**
+
+Use an editable installation from this checkout. After reviewed code/configuration changes, run `python scripts/refresh_integrity_manifest.py --reason "Describe the change"`, then rerun tests and verification before committing. The script records a post-result maintenance revision; it does not rewrite historical evidence. Repository operation details are in [the server/Git guide](docs/repository_operations.md).
 
 **Layout**
 

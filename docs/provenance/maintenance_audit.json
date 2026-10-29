@@ -1,0 +1,59 @@
+{
+  "reviewed_at_utc": "2026-10-29T01:55:37.287637+00:00",
+  "base_commit": "8a9b8b2d5844cd8a50e5f667b6263f8d4126bdd4",
+  "changes": [
+    "Canonical server checkout connected to published main after preserving legacy Git metadata.",
+    "Non-executable source-snapshot permissions normalized without changing file bytes.",
+    "Portable release paths include fixed designs and reference results on Windows.",
+    "Future author-provided license/citation files included without selecting a license.",
+    "Unregistered raw inputs, runners and substituted configurations rejected.",
+    "Explicit UTF-8 reads and exact-byte Git attributes.",
+    "Reviewed code hash refresh helper and Linux/Windows GitHub Actions checks.",
+    "Replicate refit seed schedule described accurately without changing historical analysis.",
+    "OOD and anchor-budget declarations now include their actual confirmation config/raw inputs; input loading follows the registered dependency.",
+    "HTML guide updated with repository link, canonical checkout and maintenance files."
+  ],
+  "scientific_model_formulas_changed": false,
+  "historical_evidence_contents_changed": false,
+  "raw_input_contents_changed": false,
+  "license_selected": false,
+  "tests": {
+    "passed": true,
+    "count": 52,
+    "canonical_checkout": true,
+    "clean_release_without_raw_inputs": true
+  },
+  "portable_commands": [
+    {
+      "command": [
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider"
+      ],
+      "passed": true
+    },
+    {
+      "command": [
+        "-m",
+        "perturbcompass",
+        "verify"
+      ],
+      "passed": true
+    },
+    {
+      "command": [
+        "-m",
+        "perturbcompass",
+        "results"
+      ],
+      "passed": true
+    }
+  ],
+  "frozen_evidence_files_verified": 149,
+  "registered_code_files_verified": 53,
+  "numerical_hyperparameters_changed": false,
+  "analysis_configurations_checked": 9,
+  "github_ci": "configured; check live workflow runs for execution results"
+}

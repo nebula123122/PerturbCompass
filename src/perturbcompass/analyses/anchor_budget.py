@@ -39,7 +39,7 @@ def canonical_anchor_indices(chosen: list[str], target_to_index: dict[str, int])
 
 def main() -> None:
     design = yaml.safe_load(CONFIG.read_text(encoding='utf-8'))
-    confirmation = yaml.safe_load(CONFIRMATION_CONFIG.read_text(encoding='utf-8'))
+    confirmation = yaml.safe_load(root_path(design['parent']['confirmation_config']).read_text(encoding='utf-8'))
     manifest = verify_seal(design)
     partition = pd.read_csv(root_path(confirmation['frozen_inputs']['shared_partition'])).sort_values('target').reset_index(drop=True)
     partition['target'] = partition['target'].astype(str).str.upper()
