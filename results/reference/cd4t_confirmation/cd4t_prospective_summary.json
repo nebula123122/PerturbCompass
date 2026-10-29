@@ -1,0 +1,334 @@
+{
+  "status": "V36_PROSPECTIVE_SELECTOR_CONFIRMED_ALL_THREE_CONTEXTS",
+  "generated_at_utc": "2026-10-28T04:40:44.042654+00:00",
+  "pre_numeric_manifest_sha256": "76547c744f5c809dc0a7fc3de9d1b35d11005a3a213eafa1a3cf16a9334fa916",
+  "common_genes": 6851,
+  "anchor_targets": 256,
+  "heldout_targets": 485,
+  "target_program_assignment": {
+    "direct_gene_membership": 689,
+    "source_effect_energy_fallback": 52,
+    "fallback_targets": [
+      "ABCG1",
+      "ARHGAP11B",
+      "ARMC7",
+      "C16ORF86",
+      "CACNB3",
+      "CCDC78",
+      "CTBP2",
+      "CUL7",
+      "DNLZ",
+      "DPH1",
+      "F8A1",
+      "FAM229A",
+      "GSDMA",
+      "HS6ST1",
+      "IFITM3",
+      "JAZF1",
+      "KDM8",
+      "KLF7",
+      "KLHL11",
+      "LRRC37A3",
+      "LRRC37B",
+      "LTBP3",
+      "MOK",
+      "MST1",
+      "NBPF3",
+      "NDOR1",
+      "PC",
+      "PYROXD1",
+      "RHPN1",
+      "RNF103",
+      "SGPP1",
+      "SLC16A5",
+      "SLC4A5",
+      "SLC9B1",
+      "TIGD1",
+      "TREML2",
+      "TVP23C",
+      "WDR25",
+      "WDR7",
+      "YJEFN3",
+      "YPEL1",
+      "ZFP69B",
+      "ZNF133",
+      "ZNF236",
+      "ZNF253",
+      "ZNF284",
+      "ZNF492",
+      "ZNF559",
+      "ZNF658",
+      "ZNF674",
+      "ZNF687",
+      "ZNF718"
+    ],
+    "rule": "missing target genes use the program with maximum mean squared source-effect energy"
+  },
+  "conditions": {
+    "Rest": {
+      "data": {
+        "condition": "Rest",
+        "targets": 741,
+        "genes": 6851,
+        "layer": "log_fc",
+        "mean_abs_log_fc": 0.17847798764705658,
+        "nonzero_fraction": 1.0
+      },
+      "selector": {
+        "mode": "ambiguous_probability_model_average",
+        "anchor_winner": "direct_program",
+        "leading_probability": 0.7487,
+        "anchor_mean_losses": {
+          "direct_program": 0.11705321535545443,
+          "scalar": 0.11853495062251655,
+          "residual_program": 0.11762984626861465,
+          "low_rank": 0.1190248668208369,
+          "gene_ridge": 0.11768800790107371
+        },
+        "bootstrap_best_probability": {
+          "direct_program": 0.7487,
+          "scalar": 0.0,
+          "residual_program": 0.1591,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0922
+        },
+        "weights": {
+          "direct_program": 0.7487,
+          "scalar": 0.0,
+          "residual_program": 0.1591,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0922
+        },
+        "confidence_threshold": 0.8
+      },
+      "heldout": {
+        "targets": 485,
+        "selector_mean_mse_top200": 0.11331458978892602,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.11439255107351562,
+          "scalar": 0.11569418616637576,
+          "residual_program": 0.11424984310675253,
+          "low_rank": 0.11557385779187544,
+          "gene_ridge": 0.11454530607136011
+        },
+        "oracle_fixed_family": "residual_program",
+        "selector_regret": -0.008186035905122901,
+        "selector_regret_bootstrap_ci95": [
+          -0.009488319677131003,
+          -0.002225411272569589
+        ],
+        "primary_gate_upper_ci_at_most_0_02": true,
+        "selector_vs_scalar": {
+          "relative_improvement": 0.020567985793406574,
+          "bootstrap_ci95": [
+            0.0180740023205926,
+            0.023117224638941072
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.845360824742268,
+          "paired_mean_loss_reduction": 0.002379596377449753,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "residual_program_vs_low_rank": {
+          "relative_improvement": 0.011456004934153774,
+          "bootstrap_ci95": [
+            0.00985813689450002,
+            0.013124986093602754
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8061855670103093,
+          "paired_mean_loss_reduction": 0.0013240146851229108,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "scope_relative_improvement_vs_scalar": {
+          "top100": 0.025276894313218556,
+          "top200": 0.020567985793406574,
+          "top500": 0.016151955054246936,
+          "all": 0.009426078192036336
+        }
+      }
+    },
+    "Stim8hr": {
+      "data": {
+        "condition": "Stim8hr",
+        "targets": 741,
+        "genes": 6851,
+        "layer": "log_fc",
+        "mean_abs_log_fc": 0.15829598903656006,
+        "nonzero_fraction": 1.0
+      },
+      "selector": {
+        "mode": "ambiguous_probability_model_average",
+        "anchor_winner": "direct_program",
+        "leading_probability": 0.651,
+        "anchor_mean_losses": {
+          "direct_program": 0.10626250079934352,
+          "scalar": 0.10782138137433045,
+          "residual_program": 0.10670228510372345,
+          "low_rank": 0.10843303003639448,
+          "gene_ridge": 0.10703998204859277
+        },
+        "bootstrap_best_probability": {
+          "direct_program": 0.651,
+          "scalar": 0.0,
+          "residual_program": 0.3121,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0369
+        },
+        "weights": {
+          "direct_program": 0.651,
+          "scalar": 0.0,
+          "residual_program": 0.3121,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0369
+        },
+        "confidence_threshold": 0.8
+      },
+      "heldout": {
+        "targets": 485,
+        "selector_mean_mse_top200": 0.10235727408075149,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.1036833699810458,
+          "scalar": 0.10507779647020234,
+          "residual_program": 0.10333077475083856,
+          "low_rank": 0.10484148842695448,
+          "gene_ridge": 0.10457564694563386
+        },
+        "oracle_fixed_family": "residual_program",
+        "selector_regret": -0.009421207500227902,
+        "selector_regret_bootstrap_ci95": [
+          -0.012029809353652434,
+          -0.004008062162720471
+        ],
+        "primary_gate_upper_ci_at_most_0_02": true,
+        "selector_vs_scalar": {
+          "relative_improvement": 0.02589055424494291,
+          "bootstrap_ci95": [
+            0.022592518090342732,
+            0.02931477560194147
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8556701030927835,
+          "paired_mean_loss_reduction": 0.002720522389450851,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "residual_program_vs_low_rank": {
+          "relative_improvement": 0.014409502371463101,
+          "bootstrap_ci95": [
+            0.01251457376239683,
+            0.016408573853417603
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8185567010309278,
+          "paired_mean_loss_reduction": 0.0015107136761158993,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "scope_relative_improvement_vs_scalar": {
+          "top100": 0.02870984912444352,
+          "top200": 0.02589055424494291,
+          "top500": 0.021159722154267313,
+          "all": 0.013567033431049702
+        }
+      }
+    },
+    "Stim48hr": {
+      "data": {
+        "condition": "Stim48hr",
+        "targets": 741,
+        "genes": 6851,
+        "layer": "log_fc",
+        "mean_abs_log_fc": 0.1614978015422821,
+        "nonzero_fraction": 1.0
+      },
+      "selector": {
+        "mode": "dominant_single_family",
+        "anchor_winner": "direct_program",
+        "leading_probability": 0.82455,
+        "anchor_mean_losses": {
+          "direct_program": 0.09780325328879119,
+          "scalar": 0.09884507928232673,
+          "residual_program": 0.0982622945330772,
+          "low_rank": 0.09941977183552808,
+          "gene_ridge": 0.09883750956589636
+        },
+        "bootstrap_best_probability": {
+          "direct_program": 0.82455,
+          "scalar": 0.0,
+          "residual_program": 0.17105,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0044
+        },
+        "weights": {
+          "direct_program": 1.0,
+          "scalar": 0.0,
+          "residual_program": 0.0,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0
+        },
+        "confidence_threshold": 0.8
+      },
+      "heldout": {
+        "targets": 485,
+        "selector_mean_mse_top200": 0.09103900011744082,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.09103900032486655,
+          "scalar": 0.0919626055178671,
+          "residual_program": 0.0908209377559773,
+          "low_rank": 0.0917118236576159,
+          "gene_ridge": 0.09099308237553244
+        },
+        "oracle_fixed_family": "residual_program",
+        "selector_regret": 0.002401014202797702,
+        "selector_regret_bootstrap_ci95": [
+          -5.594837285127774e-09,
+          0.009915173304286649
+        ],
+        "primary_gate_upper_ci_at_most_0_02": true,
+        "selector_vs_scalar": {
+          "relative_improvement": 0.010043271340836935,
+          "bootstrap_ci95": [
+            0.008335453935131316,
+            0.011795607267735547
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.7525773195876289,
+          "paired_mean_loss_reduction": 0.0009236054004262807,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "residual_program_vs_low_rank": {
+          "relative_improvement": 0.009713969978009773,
+          "bootstrap_ci95": [
+            0.008091226140333248,
+            0.011314397743272621
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8082474226804124,
+          "paired_mean_loss_reduction": 0.000890885901638598,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "scope_relative_improvement_vs_scalar": {
+          "top100": 0.016685111324836632,
+          "top200": 0.010043271340836935,
+          "top500": 0.004797845293894931,
+          "all": 0.0004788163451270311
+        }
+      }
+    }
+  },
+  "primary_joint_gate": {
+    "rule": "all_three_conditions_selector_oracle_regret_upper_ci_at_most_0.02",
+    "passed": true
+  },
+  "claim_boundary": {
+    "strict_predownload_minimum_1100_failed_and_is_reported": true,
+    "analysis_continued_only_under_outcome_blind_sample_size_adaptation": true,
+    "not_labeled_as_untouched_preregistered_confirmation": true,
+    "one_external_study_not_three_independent_studies": true,
+    "four_donors_are_nested_within_target_study": true,
+    "target_bootstrap_quantifies_within_condition_target_stability_only": true,
+    "source_K562_to_primary_CD4T_is_cross_cell_context_and_cross_study": true,
+    "low_rank_is_operational_mapping_not_proven_measurement_quality": true,
+    "residual_program_is_operational_structure_not_proven_pure_biology": true,
+    "v37_replicate_protocol_is_required_for_stronger_biology_quality_separation": true
+  }
+}

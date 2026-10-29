@@ -1,0 +1,92 @@
+protocol:
+  name: perturbcompass-v35-prospective-equivalence-aware-selector
+  version: 1
+  frozen_on: "2026-10-27"
+  stage: pre_download_metadata_only_design
+  analysis_type: jointly_frozen_two_screen_prospective_confirmation
+  objective: validate_anchor_only_equivalence_aware_calibration_family_decision
+
+parent:
+  v31_summary: docs/audit/v31_feng_external_summary.json
+  required_v31_status: V31_EXTERNAL_REPLICATION_AND_GENE_RIDGE_NONINFERIOR
+  v33_summary: docs/audit/v33_anchor_family_selector_summary.json
+  v34_budget_summary: docs/audit/v34_anchor_budget_planning_summary.json
+
+source:
+  study: Replogle_et_al_2022
+  cell_context: K562
+  modality: CRISPRi_essential
+  h5ad: data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad
+  expected_md5: 30496767641cd2e660ee6ecb5baee132
+
+targets:
+  publication: Nadig_et_al_Nature_Genetics_2025
+  publication_doi: 10.1038/s41588-025-02169-3
+  independent_external_study_count_added: 1
+  independent_screen_count_added: 2
+  common_study_caveat: HepG2_and_Jurkat_are_distinct_screens_from_the_same_external_study
+  screens:
+    hepg2:
+      role: primary_confirmation
+      cell_context: HepG2_hepatocellular_carcinoma
+      url: https://storage.googleapis.com/scperteval/processed/nadig25hepg2_processed_complete.h5ad
+      path: data/raw/v35_nadig/nadig25hepg2_processed_complete.h5ad
+      expected_size_bytes: 1236448196
+      expected_etag_md5: 02681165b34557059b398959208f322f
+    jurkat:
+      role: required_replication
+      cell_context: Jurkat_T_cell_leukemia
+      url: https://storage.googleapis.com/scperteval/processed/nadig25jurkat_processed_complete.h5ad
+      path: data/raw/v35_nadig/nadig25jurkat_processed_complete.h5ad
+      expected_size_bytes: 2004474709
+      expected_etag_md5: da5a6bba8ab2a9bb7ef610110107006e
+
+metadata_only_eligibility:
+  allowed_target_columns_priority: [target_gene, target, gene, perturbation]
+  control_tokens: [non-targeting, non_targeting, nontargeting, control, ctrl, ntc]
+  single_gene_only: true
+  minimum_cells_per_target_per_screen: 20
+  require_source_target_overlap: true
+  require_presence_in_both_target_screens: true
+  minimum_shared_eligible_targets: 800
+  target_gene_case: uppercase
+  outcome_dependent_filtering: forbidden
+
+partition:
+  common_partition_across_screens: true
+  anchor_targets: 256
+  anchor_role: anchor
+  heldout_role: test
+  seed: 350035
+  strata:
+    - source_effect_rms_quintile
+    - minimum_target_cell_count_quartile
+  no_repartition_after_numeric_access: true
+
+future_final_protocol_locked_choices:
+  model_families: [direct_program, scalar, residual_program, low_rank, gene_ridge]
+  primary_gene_scope: source_top200_per_target
+  source_program_count: 16
+  anchor_oof_folds: 5
+  equivalence_relative_margin: 0.01
+  leading_family_bootstrap_probability_threshold: 0.80
+  uncertain_action: equal_weight_ensemble_of_families_within_equivalence_margin
+  scalar_always_in_uncertain_ensemble: true
+  test_outcomes_used_once: true
+  control_split: deterministic_disjoint_anchor_and_test_control_halves
+  control_split_seed: 350036
+  required_primary_screens: [hepg2, jurkat]
+  primary_success_rule: both_screens_selector_oracle_regret_upper_ci_at_most_0.02
+  secondary_superiority_comparator: scalar
+  screen_level_unit_caveat: two_screens_do_not_estimate_general_population_between_study_variance
+
+outputs:
+  pre_download_freeze: docs/audit/v35_pre_download_freeze.json
+  metadata_report: docs/audit/v35_nadig_metadata_feasibility.json
+  shared_partition: data/derived/v35_nadig/v35_shared_partition.csv
+  eligible_targets: data/derived/v35_nadig/v35_shared_eligible_targets.csv
+
+references:
+  - Nadig et al. Nature Genetics 2025. doi:10.1038/s41588-025-02169-3
+  - scPertEval processed datasets. https://scperteval.readthedocs.io/en/latest/user-guide/datasets.html
+  - Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

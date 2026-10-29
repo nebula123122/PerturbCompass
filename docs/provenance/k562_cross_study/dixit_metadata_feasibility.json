@@ -1,0 +1,256 @@
+{
+  "stage": "V28 metadata-only feasibility before target expression access",
+  "target_expression_accessed": false,
+  "sources": {
+    "essential": {
+      "path": "data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad",
+      "target_count": 2057,
+      "gene_count": 8561
+    },
+    "gwps": {
+      "path": "data/raw/v26_k562_gwps/K562_gwps_normalized_bulk_01.h5ad",
+      "target_count": 9866,
+      "gene_count": 8246
+    }
+  },
+  "candidate_screens": [
+    {
+      "file": "DixitRegev2016_K562_TFs_13_days.h5ad",
+      "size_bytes": 121166672,
+      "md5": "b594d224cf17b268cd7e02efc976cea7",
+      "sha256": "f7c483fa2a3cb79740ee816850ad7b8432f2c4c17fb4ac6fdd2cbe32a29f11a1",
+      "shape": [
+        19268,
+        21713
+      ],
+      "obs_columns": [
+        "perturbation",
+        "target",
+        "moi",
+        "time",
+        "cell_line",
+        "celltype",
+        "perturbation_type",
+        "cancer",
+        "disease",
+        "tissue_type",
+        "organism",
+        "guide_id",
+        "ncounts",
+        "ngenes",
+        "percent_mito",
+        "percent_ribo",
+        "nperts"
+      ],
+      "candidate_obs_columns": [
+        "perturbation",
+        "moi",
+        "time",
+        "cell_line",
+        "celltype",
+        "perturbation_type",
+        "guide_id",
+        "nperts"
+      ],
+      "raw_perturbation_unique": 28,
+      "raw_target_unique": 15,
+      "clean_target_unique_excluding_control": 14,
+      "control_cells": 3419,
+      "target_cell_count_min": 589,
+      "target_cell_count_median": 1020.0,
+      "target_cell_count_max": 2347,
+      "source_overlaps": {
+        "essential": {
+          "target_overlap_count": 2,
+          "target_overlap": [
+            "GABPA",
+            "YY1"
+          ],
+          "common_measured_genes": 7875
+        },
+        "gwps": {
+          "target_overlap_count": 10,
+          "target_overlap": [
+            "CREB1",
+            "E2F4",
+            "EGR1",
+            "ELF1",
+            "ELK1",
+            "ETS1",
+            "GABPA",
+            "IRF1",
+            "NR2C2",
+            "YY1"
+          ],
+          "common_measured_genes": 7611
+        }
+      },
+      "raw_label_examples": [
+        "control",
+        "nan",
+        "p-sgCREB1-2",
+        "p-sgCREB1-4",
+        "p-sgCREB1-5",
+        "p-sgE2F4-6",
+        "p-sgE2F4-7",
+        "p-sgEGR1-2",
+        "p-sgEGR1-3",
+        "p-sgEGR1-4",
+        "p-sgELF1-1",
+        "p-sgELF1-2",
+        "p-sgELF1-4",
+        "p-sgELF1-5",
+        "p-sgELK1-1",
+        "p-sgELK1-6",
+        "p-sgELK1-7",
+        "p-sgETS1-3",
+        "p-sgETS1-5",
+        "p-sgGABPA-1",
+        "p-sgGABPA-9",
+        "p-sgIRF1-2",
+        "p-sgIRF1-3",
+        "p-sgNR2C2-2",
+        "p-sgNR2C2-3",
+        "p-sgNR2C2-5",
+        "p-sgYY1-10",
+        "p-sgYY1-3"
+      ],
+      "raw_target_examples": [
+        "CREB1",
+        "E2F4",
+        "EGR1",
+        "ELF1",
+        "ELK1",
+        "ETS1",
+        "GABPA",
+        "INTERGENIC1144056",
+        "INTERGENIC1216445",
+        "INTERGENIC216151",
+        "INTERGENIC393453",
+        "IRF1",
+        "NR2C2",
+        "YY1",
+        "nan"
+      ]
+    },
+    {
+      "file": "DixitRegev2016_K562_TFs_7_days.h5ad",
+      "size_bytes": 256685252,
+      "md5": "b4fb773a3b3857a8ee471d6d2f5221e0",
+      "sha256": "03802e358de0568cfe32de26d78bee2805687412f5fbb6b788213aca31e973a0",
+      "shape": [
+        33013,
+        23111
+      ],
+      "obs_columns": [
+        "perturbation",
+        "target",
+        "moi",
+        "time",
+        "cell_line",
+        "celltype",
+        "perturbation_type",
+        "cancer",
+        "disease",
+        "tissue_type",
+        "organism",
+        "guide_id",
+        "ncounts",
+        "ngenes",
+        "percent_mito",
+        "percent_ribo",
+        "nperts"
+      ],
+      "candidate_obs_columns": [
+        "perturbation",
+        "moi",
+        "time",
+        "cell_line",
+        "celltype",
+        "perturbation_type",
+        "guide_id",
+        "nperts"
+      ],
+      "raw_perturbation_unique": 28,
+      "raw_target_unique": 15,
+      "clean_target_unique_excluding_control": 14,
+      "control_cells": 4979,
+      "target_cell_count_min": 1015,
+      "target_cell_count_median": 1827.0,
+      "target_cell_count_max": 4220,
+      "source_overlaps": {
+        "essential": {
+          "target_overlap_count": 2,
+          "target_overlap": [
+            "GABPA",
+            "YY1"
+          ],
+          "common_measured_genes": 7880
+        },
+        "gwps": {
+          "target_overlap_count": 10,
+          "target_overlap": [
+            "CREB1",
+            "E2F4",
+            "EGR1",
+            "ELF1",
+            "ELK1",
+            "ETS1",
+            "GABPA",
+            "IRF1",
+            "NR2C2",
+            "YY1"
+          ],
+          "common_measured_genes": 7615
+        }
+      },
+      "raw_label_examples": [
+        "control",
+        "nan",
+        "p-sgCREB1-2",
+        "p-sgCREB1-4",
+        "p-sgCREB1-5",
+        "p-sgE2F4-6",
+        "p-sgE2F4-7",
+        "p-sgEGR1-2",
+        "p-sgEGR1-3",
+        "p-sgEGR1-4",
+        "p-sgELF1-1",
+        "p-sgELF1-2",
+        "p-sgELF1-4",
+        "p-sgELF1-5",
+        "p-sgELK1-1",
+        "p-sgELK1-6",
+        "p-sgELK1-7",
+        "p-sgETS1-3",
+        "p-sgETS1-5",
+        "p-sgGABPA-1",
+        "p-sgGABPA-9",
+        "p-sgIRF1-2",
+        "p-sgIRF1-3",
+        "p-sgNR2C2-2",
+        "p-sgNR2C2-3",
+        "p-sgNR2C2-5",
+        "p-sgYY1-10",
+        "p-sgYY1-3"
+      ],
+      "raw_target_examples": [
+        "CREB1",
+        "E2F4",
+        "EGR1",
+        "ELF1",
+        "ELK1",
+        "ETS1",
+        "GABPA",
+        "INTERGENIC1144056",
+        "INTERGENIC1216445",
+        "INTERGENIC216151",
+        "INTERGENIC393453",
+        "IRF1",
+        "NR2C2",
+        "YY1",
+        "nan"
+      ]
+    }
+  ]
+}

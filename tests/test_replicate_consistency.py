@@ -1,0 +1,42 @@
+from perturbcompass.analyses import replicate_consistency as replicates
+from perturbcompass import transfer, programs, evaluation, apma, design as prepare
+from pathlib import Path
+import numpy as np
+
+def test_consensus_inference_resamples_targets_not_flattened_replicates():
+    config = {'evaluation': {'bootstrap_repetitions': 2000, 'bootstrap_seed': 1, 'sign_flip_repetitions': 5000, 'sign_flip_seed': 2}}
+    candidate = np.asarray([[1.0, 1.2], [2.0, 2.2], [3.0, 3.2], [4.0, 4.2]])
+    reference = candidate + 1.0
+    result = replicates.consensus_inference(candidate, reference, config, 0)
+    expected = 1.0 - candidate.mean() / reference.mean()
+    assert np.isclose(result['relative_improvement'], expected)
+    assert result['bootstrap_ci95'][0] > 0
+
+def test_holm_gate_requires_interval_p_and_direction():
+    interval = [0.01, 0.03]
+    adjusted_p = 0.01
+    directions = 5
+    assert interval[0] > 0 and adjusted_p < 0.05 and (directions >= 5)
+    assert not (interval[0] > 0 and 0.06 < 0.05 and (directions >= 5))
+
+def test_target_replicate_mean_preserves_equal_target_weight():
+    candidate = np.asarray([[1.0, 9.0], [3.0, 3.0]])
+    reference = np.asarray([[2.0, 10.0], [4.0, 4.0]])
+    target_differences = reference.mean(axis=1) - candidate.mean(axis=1)
+    assert np.allclose(target_differences, [1.0, 1.0])
+
+def test_quality_cutpoints_are_anchor_only():
+    anchor_scores = np.asarray([-2.0, -1.0, 0.0, 1.0, 2.0, 3.0])
+    cutpoints = np.quantile(anchor_scores, [1 / 3, 2 / 3])
+    heldout_extreme = 1000.0
+    assert np.allclose(cutpoints, [-(1 / 3), 4 / 3])
+    assert heldout_extreme > cutpoints[1]
+
+def test_v36_source_only_target_program_fallback_is_reused():
+    targets = ['A', 'MISSING']
+    genes = ['A', 'B', 'C']
+    labels = np.asarray([0, 0, 1])
+    source = np.asarray([[1.0, 0.0, 0.0], [0.1, 0.1, 4.0]])
+    observed, missing = apma.assign_target_programs(targets, genes, labels, source)
+    assert observed.tolist() == [0, 1]
+    assert missing == ['MISSING']

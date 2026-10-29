@@ -1,0 +1,238 @@
+from __future__ import annotations
+from perturbcompass import families as family_models
+import argparse
+import hashlib
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+import anndata as ad
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+from perturbcompass.runtime import ROOT, root_path, digest, verify_migrated_inputs
+from perturbcompass.evaluation import bootstrap_regret, paired_inference, holm_adjust, scope_indices, per_target_mse
+from perturbcompass import transfer, programs, families, evaluation, apma, metadata
+DEFAULT_CONFIG = ROOT / 'configs/nadig_selector_validation.yaml'
+
+def verify_seal(config_path, config):
+    verify_migrated_inputs(__file__, config_path, config)
+    return json.loads(root_path(config['outputs']['pre_numeric_manifest']).read_text(encoding='utf-8'))
+
+def canonical_gene_lookup(data: ad.AnnData) -> dict[str, int]:
+    result: dict[str, int] = {}
+    values = pd.Index(data.var_names).astype(str)
+    for index, value in enumerate(values):
+        gene = str(value).strip().upper()
+        if gene and gene != 'NAN' and (gene not in result):
+            result[gene] = index
+    return result
+
+def split_controls(obs_names: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray]:
+    """Deterministic order-invariant split after sorting control observation names."""
+    order = np.argsort(obs_names.astype(str), kind='stable')
+    rng = np.random.default_rng(seed)
+    shuffled = order[rng.permutation(len(order))]
+    return (np.sort(shuffled[::2]), np.sort(shuffled[1::2]))
+
+def target_effect_matrix(path: Path, genes: list[str], targets: list[str], label_column: str, control_label: str, control_seed: int) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Read normalized log1p X once and form perturbation-minus-control centroids."""
+    data = ad.read_h5ad(path)
+    lookup = canonical_gene_lookup(data)
+    missing_genes = sorted(set(genes) - set(lookup))
+    if missing_genes:
+        raise RuntimeError(f'{path.name} lacks {len(missing_genes)} frozen common genes')
+    columns = np.asarray([lookup[gene] for gene in genes], dtype=np.int64)
+    raw_labels = data.obs[label_column].astype(str).str.strip()
+    labels = raw_labels.str.upper().to_numpy(dtype=object)
+    control_token = control_label.upper()
+    target_to_code = {target: index for index, target in enumerate(targets)}
+    relevant = np.asarray([label == control_token or label in target_to_code for label in labels])
+    kept_labels = labels[relevant]
+    kept_names = np.asarray(data.obs_names.astype(str))[relevant]
+    matrix = data.X[relevant][:, columns]
+    if not sp.issparse(matrix):
+        raise RuntimeError('V35 target X unexpectedly dense; frozen sparse aggregation path required')
+    matrix = matrix.tocsr().astype(np.float32)
+    if matrix.data.size and (not np.isfinite(matrix.data).all() or float(matrix.data.min()) < 0):
+        raise RuntimeError('V35 normalized log1p X contains invalid or negative values')
+    control_rows = np.flatnonzero(kept_labels == control_token)
+    half_a_local, half_b_local = split_controls(kept_names[control_rows], control_seed)
+    half_a = control_rows[half_a_local]
+    half_b = control_rows[half_b_local]
+    control_a = np.asarray(matrix[half_a].mean(axis=0)).ravel().astype(np.float32)
+    control_b = np.asarray(matrix[half_b].mean(axis=0)).ravel().astype(np.float32)
+    row_codes = np.asarray([target_to_code.get(str(label), -1) for label in kept_labels], dtype=int)
+    perturb_rows = np.flatnonzero(row_codes >= 0)
+    group = sp.csr_matrix((np.ones(len(perturb_rows), dtype=np.float32), (row_codes[perturb_rows], perturb_rows)), shape=(len(targets), matrix.shape[0]))
+    counts = np.asarray(group.sum(axis=1)).ravel().astype(int)
+    if np.any(counts == 0):
+        missing = [targets[index] for index in np.flatnonzero(counts == 0)[:20]]
+        raise RuntimeError(f'target rows disappeared after numeric load: {missing}')
+    means = group @ matrix
+    means = means.multiply((1.0 / counts)[:, None]).toarray().astype(np.float32)
+    del matrix, group, data
+    return (means - control_a[None, :], means - control_b[None, :], {'control_cells': int(len(control_rows)), 'control_half_a': int(len(half_a)), 'control_half_b': int(len(half_b)), 'target_cells_min': int(counts.min()), 'target_cells_median': float(np.median(counts)), 'target_cells_max': int(counts.max()), 'nonzero_fraction': float((means != 0).mean())})
+
+def choose_selector(losses: np.ndarray, families: list[str], relative_margin: float, bootstrap_repetitions: int, seed: int, confidence_threshold: float, scalar_always: bool) -> dict[str, Any]:
+    means = losses.mean(axis=0)
+    order = np.argsort(means, kind='stable')
+    winner = int(order[0])
+    equivalent = np.flatnonzero(means / means[winner] - 1.0 <= relative_margin).tolist()
+    rng = np.random.default_rng(seed)
+    counts = np.zeros(len(families), dtype=int)
+    for start in range(0, bootstrap_repetitions, 1000):
+        size = min(1000, bootstrap_repetitions - start)
+        rows = rng.integers(0, losses.shape[0], size=(size, losses.shape[0]))
+        boot_means = losses[rows].mean(axis=1)
+        counts += np.bincount(np.argmin(boot_means, axis=1), minlength=len(families))
+    frequency = counts / bootstrap_repetitions
+    confident = bool(frequency[winner] >= confidence_threshold)
+    if confident:
+        members = [winner]
+        mode = 'confident_single_family'
+    else:
+        members = list(equivalent)
+        scalar_index = families.index('scalar')
+        if scalar_always and scalar_index not in members:
+            members.append(scalar_index)
+        members = sorted(set(members))
+        mode = 'uncertain_equivalence_ensemble'
+    return {'mode': mode, 'anchor_winner': families[winner], 'selected_members': [families[index] for index in members], 'member_indices': members, 'equivalent_families': [families[index] for index in equivalent], 'anchor_mean_losses': {families[index]: float(means[index]) for index in range(len(families))}, 'bootstrap_selection_frequency': {families[index]: float(frequency[index]) for index in range(len(families))}, 'leading_probability': float(frequency[winner]), 'confidence_threshold': float(confidence_threshold)}
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config_path = args.config.resolve()
+    config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
+    manifest = verify_seal(config_path, config)
+    partition = pd.read_csv(root_path(config['frozen_inputs']['shared_partition']))
+    partition['target'] = partition['target'].astype(str).str.upper()
+    partition = partition.sort_values('target').reset_index(drop=True)
+    role_counts = partition['role'].value_counts().to_dict()
+    expected_roles = {config['partition']['anchor_role']: int(config['partition']['expected_anchor_targets']), config['partition']['heldout_role']: int(config['partition']['expected_heldout_targets'])}
+    if role_counts != expected_roles or partition['target'].duplicated().any():
+        raise RuntimeError(f'invalid frozen V35 partition: {role_counts}')
+    targets = partition['target'].tolist()
+    anchors = partition['role'].eq(config['partition']['anchor_role']).to_numpy()
+    heldout = ~anchors
+    target_gene_sets = []
+    for screen in config['targets']['screens'].values():
+        backed = ad.read_h5ad(root_path(screen['path']), backed='r')
+        try:
+            target_gene_sets.append(set(canonical_gene_lookup(backed)))
+        finally:
+            backed.file.close()
+    source_data = ad.read_h5ad(root_path(config['source']['h5ad']))
+    source_lookup = transfer.gene_lookup(source_data)
+    genes = sorted(set(source_lookup).intersection(*target_gene_sets))
+    if len(genes) != int(config['targets']['expected_common_genes']):
+        raise RuntimeError(f"expected {config['targets']['expected_common_genes']} common genes, found {len(genes)}")
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = transfer.aggregate_source(source_data, source_columns, int(config['source']['minimum_cells_per_construct']))
+    del source_data
+    source_map = {target: index for index, target in enumerate(source_targets)}
+    missing_targets = sorted(set(targets) - set(source_map))
+    if missing_targets:
+        raise RuntimeError(f'source lacks V35 targets: {missing_targets[:20]}')
+    source = np.stack([source_means[source_map[target]] for target in targets]).astype(np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in targets], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in targets], dtype=int)
+    source_rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1e-12))
+    model = config['model']
+    components = min(32, len(targets) - 1, len(genes) - 1)
+    embedding = TruncatedSVD(n_components=components, random_state=int(model['program_seed'])).fit_transform(source.T)
+    labels = KMeans(n_clusters=int(model['program_count']), random_state=int(model['program_seed']), n_init=20).fit_predict(embedding)
+    gene_to_index = {gene: index for index, gene in enumerate(genes)}
+    target_programs = np.asarray([labels[gene_to_index[target]] for target in targets], dtype=int)
+    task_x = transfer.task_features(source, cells, constructs)
+    signatures = scope_indices(source, int(model['top_signature_genes']))
+    index_scopes = {'top100': scope_indices(source, 100), 'top200': signatures, 'top500': scope_indices(source, 500), 'all': scope_indices(source, None)}
+    families = list(map(str, model['families']))
+    anchor_indices = np.flatnonzero(anchors)
+    local_folds = programs.stratified_round_robin_folds(source_rms[anchor_indices], int(model['anchor_oof_folds']), int(model['anchor_oof_seed']))
+    all_anchor_rows: list[dict[str, Any]] = []
+    all_heldout_rows: list[dict[str, Any]] = []
+    all_bootstrap_rows: list[dict[str, Any]] = []
+    summaries: dict[str, Any] = {}
+    for screen_offset, (screen_name, screen) in enumerate(config['targets']['screens'].items()):
+        truth_a, truth_b, data_report = target_effect_matrix(root_path(screen['path']), genes, targets, str(config['targets']['label_column']), str(config['targets']['control_label']), int(config['target_preprocessing']['control_split_seed']) + screen_offset)
+        truth = np.where(anchors[:, None], truth_a, truth_b).astype(np.float32)
+        anchor_loss = np.full((len(anchor_indices), len(families)), np.nan, dtype=float)
+        anchor_position = {int(target_index): pos for pos, target_index in enumerate(anchor_indices)}
+        for fold in range(int(model['anchor_oof_folds'])):
+            test_indices = anchor_indices[local_folds == fold]
+            local_test = np.zeros(len(targets), dtype=bool)
+            local_test[test_indices] = True
+            local_train = anchors & ~local_test
+            predictions = family_models.family_predictions(source, truth, local_train, local_test, source_rms, labels, target_programs, task_x, signatures, model, fold)
+            for local_position, target_index in enumerate(test_indices):
+                selected = signatures[target_index]
+                row: dict[str, Any] = {'screen': screen_name, 'target': targets[target_index], 'fold': int(fold)}
+                for family_index, family in enumerate(families):
+                    loss = transfer.mse(predictions[family][local_position], truth[target_index], selected)
+                    anchor_loss[anchor_position[int(target_index)], family_index] = loss
+                    row[f'{family}_mse_top200'] = loss
+                all_anchor_rows.append(row)
+        if not np.isfinite(anchor_loss).all():
+            raise RuntimeError(f'non-finite anchor OOF loss in {screen_name}')
+        decision = choose_selector(anchor_loss, families, float(config['selector']['equivalence_relative_margin']), int(config['selector']['anchor_bootstrap_repetitions']), int(config['selector']['anchor_bootstrap_seed']) + screen_offset, float(config['selector']['confident_leading_family_probability_at_least']), bool(config['selector']['scalar_always_in_uncertain_ensemble']))
+        family_predictions = family_models.family_predictions(source, truth, anchors, heldout, source_rms, labels, target_programs, task_x, signatures, model, 999 + screen_offset)
+        heldout_indices = np.flatnonzero(heldout)
+        truth_test = truth[heldout]
+        local_scopes = {key: [values[index] for index in heldout_indices] for key, values in index_scopes.items()}
+        selected_prediction = np.mean(np.stack([family_predictions[family] for family in decision['selected_members']]), axis=0)
+        primary_family_loss = np.column_stack([per_target_mse(family_predictions[family], truth_test, local_scopes['top200']) for family in families])
+        selector_primary = per_target_mse(selected_prediction, truth_test, local_scopes['top200'])
+        regret_values, regret, regret_ci = bootstrap_regret(selector_primary, primary_family_loss, int(config['evaluation']['bootstrap_repetitions']), int(config['evaluation']['bootstrap_seed']) + screen_offset)
+        for repetition, value in enumerate(regret_values):
+            all_bootstrap_rows.append({'screen': screen_name, 'bootstrap': repetition, 'regret': value})
+        scope_losses: dict[str, dict[str, np.ndarray]] = {}
+        for scope, selected_indices in local_scopes.items():
+            scope_losses[scope] = {family: per_target_mse(family_predictions[family], truth_test, selected_indices) for family in families}
+            scope_losses[scope]['selector'] = per_target_mse(selected_prediction, truth_test, selected_indices)
+        for local_index, target_index in enumerate(heldout_indices):
+            row = {'screen': screen_name, 'target': targets[target_index]}
+            for scope, losses in scope_losses.items():
+                for family, values in losses.items():
+                    row[f'{family}_mse_{scope}'] = float(values[local_index])
+            all_heldout_rows.append(row)
+        scalar_loss = scope_losses['top200']['scalar']
+        secondary = paired_inference(selector_primary, scalar_loss, int(config['evaluation']['bootstrap_repetitions']), int(config['evaluation']['bootstrap_seed']) + 100 + screen_offset, int(config['evaluation']['sign_flip_repetitions']), int(config['evaluation']['sign_flip_seed']) + screen_offset)
+        family_means = {families[i]: float(primary_family_loss[:, i].mean()) for i in range(len(families))}
+        oracle_family = min(family_means, key=family_means.get)
+        summaries[screen_name] = {'role': screen['role'], 'data': data_report, 'selector': {key: value for key, value in decision.items() if key != 'member_indices'}, 'heldout': {'targets': int(heldout.sum()), 'selector_mean_mse_top200': float(selector_primary.mean()), 'fixed_family_mean_mse_top200': family_means, 'oracle_fixed_family': oracle_family, 'selector_regret': regret, 'selector_regret_bootstrap_ci95': regret_ci, 'primary_gate_upper_ci_at_most_0_02': bool(regret_ci[1] <= 0.02), 'selector_vs_scalar': secondary, 'scope_relative_improvement_vs_scalar': {scope: float(1.0 - losses['selector'].mean() / losses['scalar'].mean()) for scope, losses in scope_losses.items()}}}
+        del truth_a, truth_b, truth, family_predictions, selected_prediction
+    raw_secondary_p = {name: float(value['heldout']['selector_vs_scalar']['sign_flip_one_sided_p']) for name, value in summaries.items()}
+    adjusted = holm_adjust(raw_secondary_p)
+    for name, value in summaries.items():
+        value['heldout']['selector_vs_scalar']['holm_adjusted_p'] = float(adjusted[name])
+    primary_pass = all((summaries[name]['heldout']['primary_gate_upper_ci_at_most_0_02'] for name in config['evaluation']['required_screens']))
+    status = 'V35_PROSPECTIVE_SELECTOR_CONFIRMED_BOTH_SCREENS' if primary_pass else 'V35_PROSPECTIVE_SELECTOR_NOT_CONFIRMED_BOTH_SCREENS'
+    summary = {'status': status, 'generated_at_utc': datetime.now(timezone.utc).isoformat(), 'pre_numeric_manifest_sha256': digest(root_path(config['outputs']['pre_numeric_manifest'])), 'common_genes': len(genes), 'anchor_targets': int(anchors.sum()), 'heldout_targets': int(heldout.sum()), 'screens': summaries, 'primary_joint_gate': {'rule': config['evaluation']['primary_success_rule'], 'passed': primary_pass}, 'claim_boundary': config['claim_boundary']}
+    paths = {key: root_path(value) for key, value in config['outputs'].items()}
+    for key in ('anchor_oof_metrics', 'heldout_metrics', 'bootstrap_regret', 'summary_json', 'summary_markdown', 'output_audit'):
+        paths[key].parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(all_anchor_rows).to_csv(paths['anchor_oof_metrics'], index=False)
+    pd.DataFrame(all_heldout_rows).to_csv(paths['heldout_metrics'], index=False)
+    pd.DataFrame(all_bootstrap_rows).to_csv(paths['bootstrap_regret'], index=False)
+    paths['summary_json'].write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    lines = ['# V35 Nadig 双屏前瞻确认', '', f'- 状态：**{status}**', f'- 设计：256 个 anchor 只用于选法；1004 个 held-out 扰动只打开一次。', f"- 联合主门槛：**{('通过' if primary_pass else '未通过')}**（两屏 regret 95% CI 上界均 ≤2%）。", '']
+    for name, value in summaries.items():
+        held = value['heldout']
+        selector = value['selector']
+        lines.extend([f'## {name}', '', f"- anchor 决策：{selector['mode']}；成员：{', '.join(selector['selected_members'])}", f"- anchor 赢家：{selector['anchor_winner']}；bootstrap 稳定率：{100 * selector['leading_probability']:.2f}%", f"- test 最佳固定家族：{held['oracle_fixed_family']}", f"- selector regret：{100 * held['selector_regret']:.3f}%（95% CI {100 * held['selector_regret_bootstrap_ci95'][0]:.3f}% 至 {100 * held['selector_regret_bootstrap_ci95'][1]:.3f}%）", f"- selector 相对 scalar：{100 * held['selector_vs_scalar']['relative_improvement']:.3f}%（95% CI {100 * held['selector_vs_scalar']['bootstrap_ci95'][0]:.3f}% 至 {100 * held['selector_vs_scalar']['bootstrap_ci95'][1]:.3f}%；Holm p={held['selector_vs_scalar']['holm_adjusted_p']:.6g}）", ''])
+    lines.append('HepG2 与 Jurkat 是同一外部研究中的两个不同细胞屏，不等于两项独立研究；目标级置信区间只描述屏内扰动稳定性。')
+    paths['summary_markdown'].write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    output_files = [paths['anchor_oof_metrics'], paths['heldout_metrics'], paths['bootstrap_regret'], paths['summary_json'], paths['summary_markdown']]
+    audit = {'status': 'V35_OUTPUT_AUDIT_PASS', 'summary_status': status, 'row_counts': {'anchor_oof': len(all_anchor_rows), 'heldout': len(all_heldout_rows), 'bootstrap_regret': len(all_bootstrap_rows)}, 'expected_row_counts': {'anchor_oof': 2 * int(anchors.sum()), 'heldout': 2 * int(heldout.sum()), 'bootstrap_regret': 2 * int(config['evaluation']['bootstrap_repetitions'])}, 'files': {str(path.relative_to(ROOT)).replace('\\', '/'): digest(path) for path in output_files}}
+    if audit['row_counts'] != audit['expected_row_counts']:
+        raise RuntimeError('V35 output row count audit failed')
+    paths['output_audit'].write_text(json.dumps(audit, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,23 @@
+{
+  "status": "V36_TRANSPORT_ONLY_ENDPOINT_AMENDMENT",
+  "recorded_on": "2026-10-28",
+  "timing": "after_pre_download_freeze_before_any_valid_target_bytes_were_downloaded",
+  "observed_failure": {
+    "response_bytes": 456,
+    "http_status": 301,
+    "s3_error": "PermanentRedirect",
+    "declared_bucket_region": "us-east-1",
+    "failed_endpoint": "genome-scale-tcell-perturb-seq.s3.us-west-2.amazonaws.com"
+  },
+  "change": {
+    "old_endpoint": "genome-scale-tcell-perturb-seq.s3.us-west-2.amazonaws.com",
+    "new_endpoint": "genome-scale-tcell-perturb-seq.s3.amazonaws.com",
+    "s3_keys_unchanged": true,
+    "expected_sizes_unchanged": true,
+    "expected_etags_unchanged": true,
+    "statistical_protocol_unchanged": true,
+    "metadata_inspector_unchanged": true
+  },
+  "invalid_response_preservation": "The 456-byte XML response is retained under logs before restarting the valid transfer.",
+  "target_outcomes_read": false
+}

@@ -1,0 +1,169 @@
+{
+  "status": "V35_POST_OUTCOME_EXPLORATORY_ONLY",
+  "generated_at_utc": "2026-10-27T16:14:19.504707+00:00",
+  "input_sha256": "be431aa181843ffd95041ba5cb23ed230625f50318c7e33b19562afaf48ae0a0",
+  "primary_summary_sha256": "d9dc932d9031be076aeb3401374b2d47e4356f1f989806b13d1c7fce769c7a19",
+  "screens": {
+    "hepg2": {
+      "residual_program_comparisons_top200": {
+        "low_rank": {
+          "relative_improvement": 0.026990827808267892,
+          "bootstrap_ci95": [
+            0.01988336162452186,
+            0.03381094741025244
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.6922310756972112,
+          "screen": "hepg2",
+          "candidate": "residual_program",
+          "comparator": "low_rank",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        },
+        "gene_ridge": {
+          "relative_improvement": 0.0981228548965909,
+          "bootstrap_ci95": [
+            0.06525128722396464,
+            0.12971324491111663
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.6324701195219123,
+          "screen": "hepg2",
+          "candidate": "residual_program",
+          "comparator": "gene_ridge",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        },
+        "direct_program": {
+          "relative_improvement": 0.25884129161159974,
+          "bootstrap_ci95": [
+            0.2237702891123168,
+            0.29240060383823296
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.6932270916334662,
+          "screen": "hepg2",
+          "candidate": "residual_program",
+          "comparator": "direct_program",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        },
+        "scalar": {
+          "relative_improvement": 0.31146876311533556,
+          "bootstrap_ci95": [
+            0.2795620480058605,
+            0.34266110225307117
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.7330677290836654,
+          "screen": "hepg2",
+          "candidate": "residual_program",
+          "comparator": "scalar",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        }
+      },
+      "residual_vs_low_rank_relative_improvement_by_scope": {
+        "top100": 0.03884632244691477,
+        "top200": 0.026990827808267892,
+        "top500": 0.015150024125948458,
+        "all": 0.0012348637220888081
+      },
+      "outcome_aware_counterfactuals": {
+        "drop_forced_scalar_and_use_anchor_winner_residual": {
+          "regret": 8.881784197001252e-16,
+          "bootstrap_ci95": [
+            -8.881784197001252e-16,
+            2.4424906541753444e-15
+          ]
+        },
+        "average_residual_and_low_rank": {
+          "regret": 0.01386977049120297,
+          "bootstrap_ci95": [
+            0.010191822569137721,
+            0.01759997905066142
+          ]
+        }
+      }
+    },
+    "jurkat": {
+      "residual_program_comparisons_top200": {
+        "low_rank": {
+          "relative_improvement": 0.033216682128244246,
+          "bootstrap_ci95": [
+            0.026132891640754382,
+            0.04000048065400947
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.7340637450199203,
+          "screen": "jurkat",
+          "candidate": "residual_program",
+          "comparator": "low_rank",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        },
+        "gene_ridge": {
+          "relative_improvement": 0.06426283179729808,
+          "bootstrap_ci95": [
+            0.019223213690407238,
+            0.10951096576625453
+          ],
+          "sign_flip_one_sided_p": 0.003619963800361996,
+          "targets_improved_fraction": 0.5637450199203188,
+          "screen": "jurkat",
+          "candidate": "residual_program",
+          "comparator": "gene_ridge",
+          "holm_adjusted_p_across_8_comparisons": 0.003619963800361996
+        },
+        "direct_program": {
+          "relative_improvement": 0.15727078723590293,
+          "bootstrap_ci95": [
+            0.1101621746702115,
+            0.20217924568932
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.6693227091633466,
+          "screen": "jurkat",
+          "candidate": "residual_program",
+          "comparator": "direct_program",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        },
+        "scalar": {
+          "relative_improvement": 0.25061431542162316,
+          "bootstrap_ci95": [
+            0.21004525144394032,
+            0.29139482533105254
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.7181274900398407,
+          "screen": "jurkat",
+          "candidate": "residual_program",
+          "comparator": "scalar",
+          "holm_adjusted_p_across_8_comparisons": 7.999920000799993e-05
+        }
+      },
+      "residual_vs_low_rank_relative_improvement_by_scope": {
+        "top100": 0.046153138824908124,
+        "top200": 0.033216682128244246,
+        "top500": 0.01844224355204027,
+        "all": 0.0010287075971634474
+      },
+      "outcome_aware_counterfactuals": {
+        "drop_forced_scalar_and_use_anchor_winner_residual": {
+          "regret": 6.661338147750939e-16,
+          "bootstrap_ci95": [
+            -2.1094237467877974e-15,
+            1.1102230246251565e-15
+          ]
+        },
+        "average_residual_and_low_rank": {
+          "regret": 0.017178969431003166,
+          "bootstrap_ci95": [
+            0.013436847224195015,
+            0.020832076813737537
+          ]
+        }
+      }
+    }
+  },
+  "interpretation_boundary": {
+    "all_analyses_were_run_after_primary_outcomes_were_seen": true,
+    "counterfactual_rules_are_not_prospective_confirmation": true,
+    "no_new_claim_should_be_called_confirmatory_without_another_unseen_screen": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "status": "V40_SOURCE_ONLY_ANCHOR_ORDER_AND_IMPLEMENTATION_SEALED",
+  "frozen_at_utc": "2026-10-28T07:06:11.778170+00:00",
+  "design_was_frozen_before_v36_numeric_access": true,
+  "order_was_computed_after_v36_results_but_without_reading_target_outcomes": true,
+  "v40_target_outcomes_read": false,
+  "config_sha256": "f4ea57ac42c62ea2c2c9d298310f96171853f43a9e09a4154ea5a389f3c04087",
+  "v36_config_sha256": "e09fbd05221e577a98d532b19c24717faf89e6bd91ffddad92e42437be2629a2",
+  "v36_pre_numeric_manifest_sha256": "76547c744f5c809dc0a7fc3de9d1b35d11005a3a213eafa1a3cf16a9334fa916",
+  "v36_partition_sha256": "6fe4bc1455a3d5b9aae970d75e6291c38c84bff3b8df69554138d39224504182",
+  "source_anchor_order_sha256": "046bdd378d989a7af866488f3d740effee031c60d04ea01d05cfe97041601426",
+  "runner_sha256": "db33a2f017338c8b561bed686cb3de43dbe51a8606a2513cfc319c11ef30b985",
+  "tests_sha256": "ed85c1ba52e505b7d1e98a543e4ded9975c6565e673336d76bc0b58a21f2459d",
+  "common_genes": 6851,
+  "anchor_count": 256,
+  "budgets": [
+    32,
+    64,
+    128,
+    256
+  ],
+  "target_outcomes_used_for_order": false
+}

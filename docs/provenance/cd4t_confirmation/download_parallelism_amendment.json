@@ -1,0 +1,18 @@
+{
+  "status": "V36_TRANSPORT_ONLY_PARALLELISM_AMENDMENT",
+  "recorded_on": "2026-10-28",
+  "timing": "during_metadata_download_before_main_target_artifact_started",
+  "reason": "A single curl connection transferred the public metadata at approximately 30-50 KB/s; the server already provides aria2c and S3 advertises byte ranges.",
+  "change": {
+    "client_from": "curl single connection",
+    "client_to": "aria2c with at most 16 byte-range connections",
+    "resume_enabled": true,
+    "s3_keys_unchanged": true,
+    "expected_sizes_unchanged": true,
+    "expected_etags_unchanged": true,
+    "statistical_protocol_unchanged": true,
+    "metadata_inspector_unchanged": true
+  },
+  "main_target_bytes_present_when_recorded": false,
+  "target_outcomes_read": false
+}

@@ -1,0 +1,68 @@
+protocol:
+  name: perturbcompass-v40-source-space-anchor-budget-frontier
+  version: 1
+  frozen_on: "2026-10-28"
+  stage: pre_v36_numeric_design
+  analysis_type: prespecified_label_efficiency_sensitivity_within_external_study
+
+parent:
+  v36_predownload_config: configs/v36_cd4t_predownload.yaml
+  use_v36_eligible_targets_partition_genes_models_and_hyperparameters_unchanged: true
+  use_only_v36_anchor_pool_for_all_training: true
+  use_v36_heldout_targets_for_all_budget_evaluation: true
+  no_target_outcome_used_to_choose_anchor_subsets: true
+
+anchor_design:
+  budgets: [32, 64, 128, 256]
+  nested_subsets: true
+  features: K562_source_effect_profiles_on_v36_common_genes
+  embedding: TruncatedSVD_32_components_then_row_L2_normalization
+  svd_seed: 400001
+  selection: deterministic_farthest_first_maximin
+  initial_target: nearest_to_global_embedding_centroid_with_lexical_tie_break
+  subsequent_target: maximum_distance_to_selected_set_with_lexical_tie_break
+  same_anchor_prefix_across_all_three_conditions: true
+  full_256_budget_equals_v36_anchor_pool: true
+
+selector:
+  families: [direct_program, scalar, residual_program, low_rank, gene_ridge]
+  inner_target_folds: 4
+  anchor_oof_folds: 5
+  anchor_bootstrap_repetitions: 20000
+  dominant_probability_threshold: 0.80
+  dominant_action: choose_anchor_oof_mean_loss_winner
+  ambiguous_action: bootstrap_best_probability_weighted_average_of_all_families
+  forced_baseline_inclusion: false
+  refit_separately_for_each_budget_and_condition: true
+
+evaluation:
+  primary_metric: target_equal_macro_MSE_on_source_top200
+  primary_estimand: selector_regret_relative_to_best_fixed_family_on_common_v36_heldout_targets
+  bootstrap_repetitions: 20000
+  bootstrap_seed: 400002
+  budget_success_threshold_regret_upper_95pct_CI: 0.05
+  minimal_reliable_budget_rule: smallest_budget_meeting_threshold_in_all_three_conditions
+  secondary_estimand: relative_MSE_increase_vs_256_anchor_APMA_on_same_heldout_targets
+  secondary_noninferiority_margin: 0.05
+  secondary_rule: upper_95pct_CI_at_most_0.05_in_all_three_conditions
+  no_multiple_testing_claim_for_exploratory_family_weights: true
+  inferential_unit: heldout_perturbation_target_with_paired_budget_predictions
+
+outputs:
+  design_freeze: docs/audit/v40_anchor_budget_design_freeze.json
+  source_anchor_order: data/derived/v40_anchor_budget/v40_source_anchor_order.csv
+  pre_numeric_manifest: docs/audit/v40_anchor_budget_pre_numeric_manifest.json
+  summary_json: docs/audit/v40_anchor_budget_summary.json
+  summary_markdown: docs/audit/v40_anchor_budget_summary.md
+
+claim_boundary:
+  reuses_v36_external_study_and_heldout_targets: true
+  not_an_additional_independent_validation: true
+  supports_target_measurement_efficiency_not_wet_lab_cost_directly: true
+  farthest_first_is_source_space_design_not_proven_optimal_experimental_design: true
+  minimum_budget_is_specific_to_this_source_target_pair_and_protocol: true
+
+references:
+  - Zhu et al. Cell 2026. doi:10.1016/j.cell.2026.08.002
+  - Tiwari et al. bioRxiv 2026. doi:10.64898/2026.10.16.759604
+  - Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

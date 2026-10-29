@@ -1,0 +1,18 @@
+{
+  "status": "FROZEN_BEFORE_V31_NUMERIC_TARGET_ACCESS",
+  "sealed_at_utc": "2026-10-27T10:00:54.353241+00:00",
+  "pre_download_freeze_sha256": "bb791316f5905d6bac3755119fd50c0a882dee84faf579217815160776796535",
+  "config_sha256": "f7b9ec4c228c5471bf28730cadceb9685b6b888a1ad625a690b70ba4763db695",
+  "runner_sha256": "0703c1ebd81c9fbd65404773297147f2a7ddd71d03303bef7b665582a0c02789",
+  "target_size_bytes": 77563731,
+  "target_md5": "f75a54e972e14dad2465070e2108f58a",
+  "target_sha256": "4e963e6806995b448854636b131072ee23abd4af127068d03fb4ea07240dede0",
+  "target_header": [
+    "Target",
+    "Expressed_Gene_Symbol",
+    "Expressed_Gene_Ens_ID",
+    "lfc",
+    "pval_adj"
+  ],
+  "target_numeric_values_read": false
+}

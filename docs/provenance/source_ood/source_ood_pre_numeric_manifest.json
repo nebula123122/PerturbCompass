@@ -1,0 +1,143 @@
+{
+  "status": "V38_SOURCE_CLUSTERS_FROZEN_BEFORE_V38_NUMERIC_ACCESS",
+  "generated_at_utc": "2026-10-28T06:56:21.312964+00:00",
+  "target_effect_layers_read": false,
+  "cluster_feasibility_adaptation_sha256": "f18c1dc4f18ffe851a70b708ab3bb22cb511131b837a5598364adb8201e7682b",
+  "design_config_sha256": "2b1e2bba0fbf252c4ec7ab3a1b8b4c2ccad7809ead1fb7027cba5f7d6add36ef",
+  "v36_config_sha256": "e09fbd05221e577a98d532b19c24717faf89e6bd91ffddad92e42437be2629a2",
+  "v36_partition_sha256": "6fe4bc1455a3d5b9aae970d75e6291c38c84bff3b8df69554138d39224504182",
+  "source_cluster_partition_sha256": "707e9c49594443c92dd8a1a33b97a081e585726b2c3cedafabea0c194ce173b2",
+  "common_genes": 6851,
+  "cluster_counts": [
+    {
+      "cluster": 0,
+      "training_anchors_outside_cluster": 204,
+      "heldout_test_targets": 87
+    },
+    {
+      "cluster": 1,
+      "training_anchors_outside_cluster": 222,
+      "heldout_test_targets": 77
+    },
+    {
+      "cluster": 2,
+      "training_anchors_outside_cluster": 206,
+      "heldout_test_targets": 83
+    },
+    {
+      "cluster": 3,
+      "training_anchors_outside_cluster": 224,
+      "heldout_test_targets": 56
+    },
+    {
+      "cluster": 4,
+      "training_anchors_outside_cluster": 222,
+      "heldout_test_targets": 49
+    },
+    {
+      "cluster": 5,
+      "training_anchors_outside_cluster": 238,
+      "heldout_test_targets": 44
+    },
+    {
+      "cluster": 6,
+      "training_anchors_outside_cluster": 220,
+      "heldout_test_targets": 89
+    }
+  ],
+  "actual_cluster_count": 7,
+  "candidate_cluster_reports_until_selection": [
+    {
+      "cluster_count": 8,
+      "feasible": false,
+      "counts": [
+        {
+          "cluster": 0,
+          "training_anchors_outside_cluster": 210,
+          "heldout_test_targets": 73
+        },
+        {
+          "cluster": 1,
+          "training_anchors_outside_cluster": 225,
+          "heldout_test_targets": 74
+        },
+        {
+          "cluster": 2,
+          "training_anchors_outside_cluster": 210,
+          "heldout_test_targets": 80
+        },
+        {
+          "cluster": 3,
+          "training_anchors_outside_cluster": 223,
+          "heldout_test_targets": 65
+        },
+        {
+          "cluster": 4,
+          "training_anchors_outside_cluster": 226,
+          "heldout_test_targets": 49
+        },
+        {
+          "cluster": 5,
+          "training_anchors_outside_cluster": 227,
+          "heldout_test_targets": 37
+        },
+        {
+          "cluster": 6,
+          "training_anchors_outside_cluster": 239,
+          "heldout_test_targets": 39
+        },
+        {
+          "cluster": 7,
+          "training_anchors_outside_cluster": 232,
+          "heldout_test_targets": 68
+        }
+      ]
+    },
+    {
+      "cluster_count": 7,
+      "feasible": true,
+      "counts": [
+        {
+          "cluster": 0,
+          "training_anchors_outside_cluster": 204,
+          "heldout_test_targets": 87
+        },
+        {
+          "cluster": 1,
+          "training_anchors_outside_cluster": 222,
+          "heldout_test_targets": 77
+        },
+        {
+          "cluster": 2,
+          "training_anchors_outside_cluster": 206,
+          "heldout_test_targets": 83
+        },
+        {
+          "cluster": 3,
+          "training_anchors_outside_cluster": 224,
+          "heldout_test_targets": 56
+        },
+        {
+          "cluster": 4,
+          "training_anchors_outside_cluster": 222,
+          "heldout_test_targets": 49
+        },
+        {
+          "cluster": 5,
+          "training_anchors_outside_cluster": 238,
+          "heldout_test_targets": 44
+        },
+        {
+          "cluster": 6,
+          "training_anchors_outside_cluster": 220,
+          "heldout_test_targets": 89
+        }
+      ]
+    }
+  ],
+  "preprocessing": {
+    "svd_components": 32,
+    "row_normalization": "L2",
+    "deterministic_relabel": "centroid_first_component_then_original_label"
+  }
+}

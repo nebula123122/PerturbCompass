@@ -1,0 +1,142 @@
+{
+  "stage": "V29 exploratory low-rank nuisance map plus program residual",
+  "generated_at_utc": "2026-10-27T04:23:41.622659+00:00",
+  "status": "RESIDUAL_PROGRAM_NOT_PROMOTED",
+  "metadata": {
+    "essential": {
+      "eligible_targets": 57,
+      "common_measured_genes": 7882,
+      "random_program_exact_p": 0.0196078431372549
+    },
+    "gwps": {
+      "eligible_targets": 64,
+      "common_measured_genes": 7619,
+      "random_program_exact_p": 0.0196078431372549
+    }
+  },
+  "comparisons": [
+    {
+      "source": "essential",
+      "comparator": "low_rank",
+      "improvement": 0.008876673463258267,
+      "ci95": [
+        -0.012138963457094304,
+        0.026225693350633874
+      ],
+      "sign_flip_p": 0.19435611287774243,
+      "targets_improved_fraction": 0.6491228070175439,
+      "holm_adjusted_p": 0.24123517529649408
+    },
+    {
+      "source": "essential",
+      "comparator": "gene_ridge",
+      "improvement": 0.051236438673138984,
+      "ci95": [
+        -0.02974757670916922,
+        0.1293286871826736
+      ],
+      "sign_flip_p": 0.12061758764824704,
+      "targets_improved_fraction": 0.6491228070175439,
+      "holm_adjusted_p": 0.24123517529649408
+    },
+    {
+      "source": "essential",
+      "comparator": "direct_program",
+      "improvement": 0.11926175166536057,
+      "ci95": [
+        -0.03702981352096528,
+        0.2602256568293851
+      ],
+      "sign_flip_p": 0.05691886162276755,
+      "targets_improved_fraction": 0.6140350877192983,
+      "holm_adjusted_p": 0.17075658486830264
+    },
+    {
+      "source": "essential",
+      "comparator": "scalar",
+      "improvement": 0.16579895750947748,
+      "ci95": [
+        0.012635279328904112,
+        0.2985684518827211
+      ],
+      "sign_flip_p": 0.01645967080658387,
+      "targets_improved_fraction": 0.6140350877192983,
+      "holm_adjusted_p": 0.06583868322633547
+    },
+    {
+      "source": "gwps",
+      "comparator": "low_rank",
+      "improvement": 0.020332459316941498,
+      "ci95": [
+        -0.03364282835552851,
+        0.05785101250280622
+      ],
+      "sign_flip_p": 0.2123957520849583,
+      "targets_improved_fraction": 0.59375,
+      "holm_adjusted_p": 0.5587088258234836
+    },
+    {
+      "source": "gwps",
+      "comparator": "gene_ridge",
+      "improvement": 0.06410987484229802,
+      "ci95": [
+        -0.08160874608528239,
+        0.18520517249128782
+      ],
+      "sign_flip_p": 0.18623627527449452,
+      "targets_improved_fraction": 0.578125,
+      "holm_adjusted_p": 0.5587088258234836
+    },
+    {
+      "source": "gwps",
+      "comparator": "direct_program",
+      "improvement": 0.09091917524606397,
+      "ci95": [
+        -0.10661827700310333,
+        0.2734442226867329
+      ],
+      "sign_flip_p": 0.1890162196756065,
+      "targets_improved_fraction": 0.625,
+      "holm_adjusted_p": 0.5587088258234836
+    },
+    {
+      "source": "gwps",
+      "comparator": "scalar",
+      "improvement": 0.2001751778002343,
+      "ci95": [
+        0.030943053214487638,
+        0.3456555130627698
+      ],
+      "sign_flip_p": 0.01627967440651187,
+      "targets_improved_fraction": 0.671875,
+      "holm_adjusted_p": 0.06511869762604748
+    }
+  ],
+  "primary_secondary_improvements_over_low_rank": {
+    "top100": 0.005269191184881228,
+    "top500": 0.008530052492806472,
+    "all": 0.00010278380736161719
+  },
+  "gates": {
+    "below_low_rank": true,
+    "bootstrap_ci": false,
+    "holm_p": false,
+    "target_fraction": true,
+    "random_program": true,
+    "sensitivity_direction": true
+  },
+  "claim_boundary": {
+    "exploratory_not_confirmatory": true,
+    "low_rank_component_is_an_operational_nuisance_mapping_not_proven_measurement_quality": true,
+    "program_residual_is_an_operational_structured_residual_not_proven_pure_biology": true,
+    "independent_confirmation_required_before_method_claim": true
+  },
+  "config_sha256": "f9c0ebd3c0999fcb82213ff90b3f1aeb0a5abe023c86b6df1264c63e9363d0ce",
+  "runner_sha256": "5b99ef18b22927a1b1e3dd23c5a1095ffa57750e28fe6f6020dd54cbb7fedf98",
+  "output_hashes": {
+    "record_metrics": "c519236e5862f130a67b1f00a39dbea84c4caefff8d2823f641cca5efab3e61e",
+    "random_program_metrics": "63c5e4983693f971cf2cc83712edff43de2f7ec33c49abb118885585c15e67a8",
+    "bootstrap_metrics": "ad1418daac86e20ad7af95c17bc95c3d17bdcde101de887f5b1af439da5d5f1c",
+    "sign_flip_metrics": "8b1621d64f72f0935f1e7d5ccde3cb7a1fb3fdade97fe20d61a70751d35ff4ea"
+  }
+}

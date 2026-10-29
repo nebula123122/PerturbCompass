@@ -1,0 +1,53 @@
+import importlib.util
+from pathlib import Path
+
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location("v36", ROOT / "scripts/run_v36_cd4t_prospective_selector.py")
+v36 = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(v36)
+
+
+def test_clear_winner_gets_unit_weight():
+    losses = np.column_stack([np.full(256, 1.0), np.full(256, 2.0), np.full(256, 3.0)])
+    result = v36.choose_probability_selector(losses, ["a", "b", "c"], 2000, 36, 0.80)
+    assert result["mode"] == "dominant_single_family"
+    assert result["weights"] == {"a": 1.0, "b": 0.0, "c": 0.0}
+
+
+def test_ambiguous_selector_uses_probability_weights_without_forced_baseline():
+    rng = np.random.default_rng(7)
+    common = rng.normal(1.0, 0.2, 256)
+    losses = np.column_stack([common + rng.normal(0, 0.05, 256), common + rng.normal(0, 0.05, 256), common + 0.5])
+    result = v36.choose_probability_selector(losses, ["a", "b", "scalar"], 5000, 37, 0.80)
+    assert result["mode"] == "ambiguous_probability_model_average"
+    assert np.isclose(sum(result["weights"].values()), 1.0)
+    assert result["weights"]["scalar"] == 0.0
+
+
+def test_weighted_prediction_is_exact_convex_combination():
+    predictions = {"a": np.ones((2, 3)), "b": np.full((2, 3), 3.0)}
+    observed = v36.weighted_prediction(predictions, ["a", "b"], np.asarray([0.25, 0.75]))
+    assert np.allclose(observed, 2.5)
+
+
+def test_bootstrap_regret_recomputes_best_family():
+    selector = np.asarray([1.0, 1.0, 1.0, 1.0])
+    families = np.column_stack([np.asarray([0.5, 0.5, 2.0, 2.0]), np.asarray([2.0, 2.0, 0.5, 0.5])])
+    values, actual, interval = v36.V35.bootstrap_regret(selector, families, 2000, 38)
+    assert np.isclose(actual, -0.2)
+    assert len(values) == 2000
+    assert interval[0] <= actual <= interval[1]
+
+
+def test_target_program_source_only_fallback_is_deterministic():
+    targets = ["A", "MISSING"]
+    genes = ["A", "B", "C"]
+    labels = np.asarray([0, 0, 1])
+    source = np.asarray([[1.0, 0.0, 0.0], [0.1, 0.1, 4.0]])
+    observed, missing = v36.assign_target_programs(targets, genes, labels, source)
+    assert observed.tolist() == [0, 1]
+    assert missing == ["MISSING"]

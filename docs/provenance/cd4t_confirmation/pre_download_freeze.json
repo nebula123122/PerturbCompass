@@ -1,0 +1,64 @@
+{
+  "status": "FROZEN_BEFORE_V36_TARGET_DOWNLOAD",
+  "frozen_at_utc": "2026-10-27T16:52:22.998213+00:00",
+  "target_outcomes_read": false,
+  "config_sha256": "8be7aed9ced233428fcf33836f42583b4f3405ed39f290e706b658bd7e916fb6",
+  "downloader_sha256": "6dc49e34906c46de08bd40f2401cadbd5ffc30f7e1d92f25c2e11df7819267d1",
+  "metadata_inspector_sha256": "bc4f8313ce364759378fa048bd6cc1ef69a3d9d1e3d4cb9585a29e95b9db7454",
+  "source_sha256": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829",
+  "source_md5": "30496767641cd2e660ee6ecb5baee132",
+  "v35_summary_sha256": "d9dc932d9031be076aeb3401374b2d47e4356f1f989806b13d1c7fce769c7a19",
+  "target_states": {
+    "main_artifact": {
+      "path": "/mnt2/neugj/wly/PerturbCompass/data/raw/v36_cd4t/GWCD4i.DE_stats.h5ad",
+      "exists_before_freeze": false
+    },
+    "metadata_table": {
+      "path": "/mnt2/neugj/wly/PerturbCompass/data/raw/v36_cd4t/DE_stats.suppl_table.csv",
+      "exists_before_freeze": false
+    }
+  },
+  "locked_revision": "remove_forced_scalar_and_use_bootstrap_best_probability_model_averaging_when_ambiguous",
+  "locked_future_choices": {
+    "model_families": [
+      "direct_program",
+      "scalar",
+      "residual_program",
+      "low_rank",
+      "gene_ridge"
+    ],
+    "primary_gene_scope": "source_top200_per_target",
+    "source_program_count": 16,
+    "anchor_oof_folds": 5,
+    "anchor_bootstrap_repetitions": 20000,
+    "dominant_family_probability_threshold": 0.8,
+    "dominant_action": "choose_anchor_oof_mean_loss_winner",
+    "ambiguous_action": "bootstrap_best_probability_weighted_average_of_all_families",
+    "forced_baseline_inclusion": false,
+    "probability_smoothing": "none",
+    "test_outcomes_used_once": true,
+    "required_primary_conditions": [
+      "Rest",
+      "Stim8hr",
+      "Stim48hr"
+    ],
+    "primary_success_rule": "all_three_conditions_selector_oracle_regret_upper_ci_at_most_0.02",
+    "secondary_comparators": [
+      "scalar",
+      "low_rank"
+    ],
+    "context_level_unit_caveat": "conditions_share_study_donors_and_protocol"
+  },
+  "s3_contract": {
+    "main_artifact": {
+      "key": "marson2025_data/GWCD4i.DE_stats.h5ad",
+      "size_bytes": 16786240107,
+      "etag": "c9ff52fcc6d6ce8a387a76dc757a5b97-2002"
+    },
+    "metadata_table": {
+      "key": "marson2025_data/suppl_tables/DE_stats.suppl_table.csv",
+      "size_bytes": 7276533,
+      "etag": "7e97202a40cbd8981416be12daa36931"
+    }
+  }
+}

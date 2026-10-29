@@ -1,0 +1,52 @@
+{
+  "status": "FROZEN_BEFORE_V36_NUMERIC_TARGET_ACCESS",
+  "frozen_at_utc": "2026-10-28T04:38:15.800688+00:00",
+  "target_outcome_layers_read": false,
+  "config_sha256": "e09fbd05221e577a98d532b19c24717faf89e6bd91ffddad92e42437be2629a2",
+  "runner_sha256": "842620459d4b4d4aa2032c7d269a70d78c868471daadaf376d3139b6566412e8",
+  "tests_sha256": "24e71d18f6ceb68da01cbd686145749d687b098ecfb4b596cead253b79759f5f",
+  "metadata_report_sha256": "9ffff078e549ec7229766796d30159c8b92efc5c4224fe557ea0100053cd6cc2",
+  "partition_sha256": "6fe4bc1455a3d5b9aae970d75e6291c38c84bff3b8df69554138d39224504182",
+  "eligible_targets_sha256": "f7570e4df14582de0a005f097262821d384b6af4ece154fa60ae90abd192b92f",
+  "target_sha256": "c355f535ff32cf7ba1edc49cf9c6039fe84f2c9ebe4d005515cba75790cfbb62",
+  "source_sha256": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829",
+  "locked_selector": {
+    "primary_metric": "target_equal_macro_mse_on_source_top200_genes",
+    "anchor_bootstrap_repetitions": 20000,
+    "anchor_bootstrap_seed": 360038,
+    "dominant_probability_threshold": 0.8,
+    "dominant_action": "choose_anchor_oof_mean_loss_winner",
+    "ambiguous_action": "bootstrap_best_probability_weighted_average_of_all_families",
+    "forced_baseline_inclusion": false,
+    "probability_smoothing": "none",
+    "selection_is_condition_specific": true,
+    "heldout_outcomes_used_once_after_selection": true
+  },
+  "locked_primary_evaluation": {
+    "primary_estimand": "selector_regret_relative_to_best_fixed_family_on_same_heldout_condition",
+    "primary_regret_definition": "mean_selector_loss_divided_by_minimum_family_mean_loss_minus_one",
+    "primary_bootstrap_oracle": "recompute_best_fixed_family_inside_each_target_bootstrap",
+    "bootstrap_repetitions": 20000,
+    "bootstrap_seed": 360039,
+    "maximum_regret_ci_upper": 0.02,
+    "primary_success_rule": "all_three_conditions_selector_oracle_regret_upper_ci_at_most_0.02",
+    "required_conditions": [
+      "Rest",
+      "Stim8hr",
+      "Stim48hr"
+    ],
+    "secondary_comparisons": [
+      "selector_vs_scalar",
+      "residual_program_vs_low_rank"
+    ],
+    "sign_flip_repetitions": 100000,
+    "sign_flip_seed": 360040,
+    "secondary_multiple_testing": "holm_across_six_condition_by_comparison_tests",
+    "secondary_gene_scopes": [
+      "top100",
+      "top500",
+      "all"
+    ],
+    "inferential_unit": "heldout_perturbation_target_within_condition"
+  }
+}

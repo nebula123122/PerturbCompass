@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""Freeze V36 eligibility and partition using only allowed target metadata columns."""
+
+from __future__ import annotations
+
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+from typing import Any
+
+import anndata as ad
+import h5py
+import numpy as np
+import pandas as pd
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG = ROOT / "configs/v36_cd4t_predownload.yaml"
+MISSINGNESS_AMENDMENT = ROOT / "docs/audit/v36_metadata_missingness_amendment.json"
+SAMPLE_SIZE_AMENDMENT = ROOT / "docs/audit/v36_blinded_sample_size_amendment.json"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+V28 = load_module("v28_v36_metadata", ROOT / "scripts/run_v28_adamson_cross_study.py")
+
+
+def root_path(value: str) -> Path:
+    return (ROOT / value).resolve()
+
+
+def digest(path: Path, algorithm: str = "sha256") -> str:
+    value = hashlib.new(algorithm)
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(16 * 1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def decode(values: Any) -> np.ndarray:
+    array = np.asarray(values)
+    if array.dtype.kind in {"S", "O"}:
+        return np.asarray([
+            value.decode("utf-8") if isinstance(value, (bytes, np.bytes_)) else str(value)
+            for value in array
+        ], dtype=object)
+    return array
+
+
+def read_frame_column(group: h5py.Group, key: str) -> np.ndarray:
+    node = group[key]
+    if isinstance(node, h5py.Dataset):
+        return decode(node[...])
+    if isinstance(node, h5py.Group) and {"codes", "categories"}.issubset(node.keys()):
+        codes = np.asarray(node["codes"][...], dtype=int)
+        categories = decode(node["categories"][...])
+        result = np.empty(len(codes), dtype=object)
+        result[codes < 0] = None
+        valid = codes >= 0
+        result[valid] = categories[codes[valid]]
+        return result
+    raise RuntimeError(f"unsupported H5AD dataframe encoding at {group.name}/{key}")
+
+
+def read_index(group: h5py.Group) -> np.ndarray:
+    key = group.attrs.get("_index", "_index")
+    if isinstance(key, bytes):
+        key = key.decode("utf-8")
+    return read_frame_column(group, str(key))
+
+
+def allocate_anchors(frame: pd.DataFrame, total: int, seed: int) -> set[str]:
+    grouped = frame.groupby("stratum", sort=True)
+    quotas: dict[str, int] = {}
+    remainders: list[tuple[float, str]] = []
+    for stratum, group in grouped:
+        exact = len(group) * total / len(frame)
+        quotas[str(stratum)] = int(np.floor(exact))
+        remainders.append((exact - np.floor(exact), str(stratum)))
+    remaining = total - sum(quotas.values())
+    for _, stratum in sorted(remainders, key=lambda item: (-item[0], item[1]))[:remaining]:
+        quotas[stratum] += 1
+    rng = np.random.default_rng(seed)
+    selected: set[str] = set()
+    for stratum, group in grouped:
+        values = np.asarray(sorted(group["target"].astype(str)), dtype=object)
+        selected.update(map(str, rng.permutation(values)[: quotas[str(stratum)]]))
+    if len(selected) != total:
+        raise RuntimeError(f"allocated {len(selected)} anchors rather than {total}")
+    return selected
+
+
+def main() -> None:
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    freeze = json.loads(root_path(config["outputs"]["pre_download_freeze"]).read_text(encoding="utf-8"))
+    if freeze.get("status") != "FROZEN_BEFORE_V36_TARGET_DOWNLOAD":
+        raise RuntimeError("V36 pre-download freeze missing")
+    if freeze["config_sha256"] != digest(CONFIG):
+        raise RuntimeError("V36 pre-download config changed")
+    amendment = json.loads(MISSINGNESS_AMENDMENT.read_text(encoding="utf-8"))
+    if amendment.get("status") != "V36_METADATA_MISSINGNESS_RULE_FROZEN_BEFORE_NUMERIC_ACCESS":
+        raise RuntimeError("V36 metadata missingness amendment missing")
+    if amendment.get("old_inspector_sha256") != freeze["metadata_inspector_sha256"]:
+        raise RuntimeError("V36 metadata amendment does not bind the pre-download inspector")
+    sample_amendment = json.loads(SAMPLE_SIZE_AMENDMENT.read_text(encoding="utf-8"))
+    if sample_amendment.get("status") != "V36_BLINDED_SAMPLE_SIZE_ADAPTATION_FROZEN_BEFORE_NUMERIC_ACCESS":
+        raise RuntimeError("V36 blinded sample-size amendment missing")
+    if sample_amendment.get("old_inspector_sha256") != amendment["new_inspector_sha256"]:
+        raise RuntimeError("V36 sample-size amendment does not chain from the missingness amendment")
+    if sample_amendment.get("new_inspector_sha256") != digest(Path(__file__).resolve()):
+        raise RuntimeError("V36 metadata inspector changed after sample-size amendment")
+
+    main_path = root_path(config["target"]["main_artifact"]["path"])
+    meta_path = root_path(config["target"]["metadata_table"]["path"])
+    for name, path in (("main_artifact", main_path), ("metadata_table", meta_path)):
+        expected = int(config["target"][name]["expected_size_bytes"])
+        if path.stat().st_size != expected:
+            raise RuntimeError(f"{name} size mismatch")
+
+    # Read only the four explicitly allowed obs columns and target gene names.
+    allowed = list(config["metadata_only_eligibility"]["allowed_obs_columns"])
+    with h5py.File(main_path, "r") as handle:
+        obs_group, var_group = handle["obs"], handle["var"]
+        missing = [column for column in allowed if column not in obs_group]
+        if missing:
+            raise RuntimeError(f"missing allowed metadata columns: {missing}")
+        target_meta = pd.DataFrame({column: read_frame_column(obs_group, column) for column in allowed})
+        if "gene_name" in var_group:
+            measured = read_frame_column(var_group, "gene_name")
+        else:
+            measured = read_index(var_group)
+        shape = [len(read_index(obs_group)), len(read_index(var_group))]
+        layer_names = sorted(map(str, handle.get("layers", {}).keys()))
+
+    target_meta["n_cells_target"] = pd.to_numeric(target_meta["n_cells_target"], errors="coerce")
+    target_meta["n_guides"] = pd.to_numeric(target_meta["n_guides"], errors="coerce")
+    complete = target_meta[list(config["metadata_only_eligibility"]["allowed_obs_columns"])].notna().all(axis=1)
+    excluded_missing_rows = int((~complete).sum())
+    target_meta = target_meta.loc[complete].copy()
+    target_meta["target"] = target_meta["target_contrast_gene_name"].astype(str).str.strip().str.upper()
+    target_meta["condition"] = target_meta["culture_condition"].astype(str).str.strip()
+    target_meta["n_cells_target"] = target_meta["n_cells_target"].astype(int)
+    target_meta["n_guides"] = target_meta["n_guides"].astype(int)
+    conditions = list(map(str, config["target"]["conditions"]))
+    if sorted(target_meta["condition"].unique()) != sorted(conditions):
+        raise RuntimeError(f"unexpected CD4 conditions: {sorted(target_meta['condition'].unique())}")
+    if target_meta[["target", "condition"]].duplicated().any():
+        raise RuntimeError("duplicate target-condition metadata rows")
+
+    source_path = root_path(config["source"]["h5ad"])
+    source = ad.read_h5ad(source_path)
+    source_lookup = V28.gene_lookup(source)
+    source_columns = np.asarray(sorted(source_lookup.values()), dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = V28.aggregate_source(
+        source, source_columns, int(config["source"]["minimum_cells_per_construct"])
+    )
+    del source
+    source_map = {str(target).upper(): index for index, target in enumerate(source_targets)}
+    source_rms = np.sqrt(np.maximum(np.mean(source_means.astype(float) ** 2, axis=1), 1.0e-12))
+    measured_genes = {str(value).strip().upper() for value in measured if str(value).strip()}
+
+    min_cells = int(config["metadata_only_eligibility"]["minimum_cells_per_target_per_condition"])
+    min_guides = int(config["metadata_only_eligibility"]["minimum_guides_per_target_per_condition"])
+    eligible_rows = []
+    for target in sorted(set(target_meta["target"]) & set(source_map) & measured_genes):
+        rows = target_meta[target_meta["target"].eq(target)].set_index("condition")
+        if not set(conditions).issubset(rows.index):
+            continue
+        if (rows.loc[conditions, "n_cells_target"] < min_cells).any():
+            continue
+        if (rows.loc[conditions, "n_guides"] < min_guides).any():
+            continue
+        source_index = source_map[target]
+        row = {
+            "target": target,
+            "source_effect_rms": float(source_rms[source_index]),
+            "source_cells": float(source_cells[source_index]),
+            "source_constructs": int(source_constructs[source_index]),
+        }
+        for condition in conditions:
+            row[f"{condition}_cells"] = int(rows.loc[condition, "n_cells_target"])
+            row[f"{condition}_guides"] = int(rows.loc[condition, "n_guides"])
+        row["minimum_target_cells"] = min(row[f"{condition}_cells"] for condition in conditions)
+        row["minimum_guides"] = min(row[f"{condition}_guides"] for condition in conditions)
+        eligible_rows.append(row)
+    eligible = pd.DataFrame(eligible_rows).sort_values("target").reset_index(drop=True)
+    minimum = int(sample_amendment["revised_minimum_shared_eligible_targets"])
+    if len(eligible) < minimum:
+        raise RuntimeError(f"only {len(eligible)} eligible targets; frozen minimum={minimum}")
+    eligible["source_rms_quintile"] = pd.qcut(
+        eligible["source_effect_rms"].rank(method="first"), 5, labels=False
+    ).astype(int)
+    eligible["target_cells_quartile"] = pd.qcut(
+        eligible["minimum_target_cells"].rank(method="first"), 4, labels=False
+    ).astype(int)
+    eligible["guide_class"] = np.where(eligible["minimum_guides"] >= 2, "multi", "single")
+    eligible["stratum"] = (
+        "r" + eligible["source_rms_quintile"].astype(str)
+        + "_c" + eligible["target_cells_quartile"].astype(str)
+        + "_g" + eligible["guide_class"]
+    )
+    anchors = allocate_anchors(eligible, int(config["partition"]["anchor_targets"]), int(config["partition"]["seed"]))
+    partition = eligible.copy()
+    partition["role"] = np.where(
+        partition["target"].isin(anchors), config["partition"]["anchor_role"], config["partition"]["heldout_role"]
+    )
+    ordered = ["target", "role", "stratum", "source_effect_rms", "minimum_target_cells", "minimum_guides"]
+    ordered += [f"{condition}_{suffix}" for condition in conditions for suffix in ("cells", "guides")]
+    partition = partition[ordered]
+
+    eligible_path = root_path(config["outputs"]["eligible_targets"])
+    partition_path = root_path(config["outputs"]["shared_partition"])
+    eligible_path.parent.mkdir(parents=True, exist_ok=True)
+    eligible.to_csv(eligible_path, index=False)
+    partition.to_csv(partition_path, index=False)
+    condition_counts = {
+        condition: {
+            "rows": int(target_meta["condition"].eq(condition).sum()),
+            "cell_count_min": int(target_meta.loc[target_meta["condition"].eq(condition), "n_cells_target"].min()),
+            "cell_count_median": float(target_meta.loc[target_meta["condition"].eq(condition), "n_cells_target"].median()),
+            "guide_count_median": float(target_meta.loc[target_meta["condition"].eq(condition), "n_guides"].median()),
+        }
+        for condition in conditions
+    }
+    report = {
+        "status": "V36_METADATA_ONLY_FEASIBILITY_PASS",
+        "target_outcome_layers_read": False,
+        "allowed_obs_columns_read": allowed,
+        "forbidden_obs_columns_read": [],
+        "metadata_missingness_rule": "exclude_rows_missing_any_allowed_label_or_count_without_imputation",
+        "metadata_rows_excluded_for_missing_allowed_fields": excluded_missing_rows,
+        "metadata_missingness_amendment_sha256": digest(MISSINGNESS_AMENDMENT),
+        "blinded_sample_size_amendment_sha256": digest(SAMPLE_SIZE_AMENDMENT),
+        "original_minimum_shared_eligible_targets": int(config["metadata_only_eligibility"]["minimum_shared_eligible_targets"]),
+        "revised_minimum_shared_eligible_targets": minimum,
+        "strict_predownload_feasibility_gate_passed": len(eligible) >= int(config["metadata_only_eligibility"]["minimum_shared_eligible_targets"]),
+        "target_shape": shape,
+        "layer_names_observed_without_values": layer_names,
+        "main_sha256": digest(main_path),
+        "metadata_table_sha256": digest(meta_path),
+        "source_targets": len(source_map),
+        "target_measured_genes": len(measured_genes),
+        "shared_measured_genes": len(set(source_lookup) & measured_genes),
+        "eligible_targets": len(eligible),
+        "anchor_targets": int((partition["role"] == config["partition"]["anchor_role"]).sum()),
+        "heldout_targets": int((partition["role"] == config["partition"]["heldout_role"]).sum()),
+        "condition_counts": condition_counts,
+        "partition_sha256": digest(partition_path),
+        "eligible_targets_sha256": digest(eligible_path),
+        "claim_boundary": {
+            "target_log_fc_lfcSE_zscore_pvalues_and_baseMean_unread": True,
+            "partition_uses_only_labels_cell_counts_guide_counts_and_source_statistics": True,
+            "conditions_are_correlated_contexts_within_one_study": True,
+        },
+    }
+    output = root_path(config["outputs"]["metadata_report"])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

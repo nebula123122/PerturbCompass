@@ -1,0 +1,100 @@
+protocol:
+  name: perturbcompass-v37-replicate-consistent-biology-quality-separation
+  version: 1
+  frozen_on: "2026-10-28"
+  stage: pre_download_design
+  analysis_type: prospective_replicate_mechanism_validation
+  objective: test_whether_residual_program_gain_repeats_across_independent_guides_and_donor_subsets
+
+parent:
+  v36_predownload_config: configs/v36_cd4t_predownload.yaml
+  v36_partition_to_be_adopted_without_change: data/derived/v36_cd4t/v36_shared_partition.csv
+  v36_model_families_and_hyperparameters_to_be_adopted_without_change: true
+  no_v37_retuning: true
+
+target:
+  study: Zhu_Dann_et_al_Cell_2026
+  publication_doi: 10.1016/j.cell.2026.08.002
+  conditions: [Rest, Stim8hr, Stim48hr]
+  pooled_effects: data/raw/v36_cd4t/GWCD4i.DE_stats.h5ad
+  donor_pairs:
+    key: marson2025_data/GWCD4i.DE_stats.by_donors.h5mu
+    url: https://genome-scale-tcell-perturb-seq.s3.amazonaws.com/marson2025_data/GWCD4i.DE_stats.by_donors.h5mu
+    path: data/raw/v37_cd4t_replicates/GWCD4i.DE_stats.by_donors.h5mu
+    expected_size_bytes: 16866278447
+    expected_s3_etag: 1f405d8c2d202c6e845c1d11e59f2e47-2011
+    expected_modalities: 6
+    dependence_note: six_two_donor_modalities_overlap_and_are_not_six_independent_studies
+  guides:
+    key: marson2025_data/GWCD4i.DE_stats.by_guide.h5mu
+    url: https://genome-scale-tcell-perturb-seq.s3.amazonaws.com/marson2025_data/GWCD4i.DE_stats.by_guide.h5mu
+    path: data/raw/v37_cd4t_replicates/GWCD4i.DE_stats.by_guide.h5mu
+    expected_size_bytes: 29424424894
+    expected_s3_etag: 2e6705636ebaa276c7bc7c5a148ad096-3508
+    expected_modalities: [guide_1, guide_2]
+    eligibility: target_condition_present_in_both_guides
+
+frozen_model:
+  candidate: residual_program
+  structural_reference: low_rank
+  baseline_reference: scalar
+  training_truth: pooled_v36_anchor_log_fc_only
+  evaluation_truth: heldout_replicate_log_fc_only
+  primary_gene_scope: source_top200_per_target
+  prediction_refitting_on_replicate_data: forbidden
+  heldout_target_use_for_model_selection: forbidden
+
+replicate_estimands:
+  target_level_difference: reference_mse_minus_candidate_mse
+  guide_consensus: mean_difference_across_guide_1_and_guide_2_within_target_condition
+  donor_pair_consensus: mean_difference_across_available_two_donor_modalities_within_target_condition
+  replicate_direction_requirement:
+    guides: both_guide_modalities_positive_point_estimate
+    donors: at_least_five_of_six_donor_pair_modalities_positive_point_estimate
+  uncertainty:
+    unit: heldout_perturbation_target_within_condition
+    bootstrap_repetitions: 20000
+    seed: 370041
+    interval: percentile_95
+  multiplicity: holm_across_six_context_by_replicate_type_primary_tests
+
+primary_success_rule:
+  description: in_each_of_three_conditions_both_guide_and_donor_consensus_improvement_CI_lower_bound_above_zero_and_direction_requirement_met
+  intersection_union_across_conditions: true
+  no_combining_conditions_as_independent_studies: true
+
+quality_separation_diagnostics:
+  status: predeclared_secondary_not_identification_claim
+  reliability_strata_boundaries: estimated_on_anchor_targets_only_then_applied_unchanged_to_heldout_targets
+  reliability_variables: [guide_correlation_all, donor_correlation_all_mean, mean_top200_lfcSE, n_cells_target, n_guides]
+  compare_residual_gain_across_reliability_tertiles: true
+  cross_replicate_effect_consistency:
+    guide_profile_correlation: guide_1_vs_guide_2
+    donor_profile_correlation: all_six_pairwise_modalities_reported_with_overlap_warning
+  interpretation:
+    gain_repeated_across_guides_and_donor_subsets: evidence_for_replicate_consistent_biological_component
+    gain_only_in_pooled_or_low_reliability_estimates: evidence_for_measurement_specific_or_unstable_component
+    pure_biology_and_pure_noise_identified: false
+
+minimum_feasibility:
+  dual_guide_heldout_targets_per_condition: 400
+  donor_consensus_heldout_targets_per_condition: 700
+  thresholds_must_not_be_relaxed_after_replicate_effect_access: true
+
+outputs:
+  pre_download_freeze: docs/audit/v37_replicate_pre_download_freeze.json
+  metadata_report: docs/audit/v37_replicate_metadata_feasibility.json
+  pre_numeric_manifest: docs/audit/v37_replicate_pre_numeric_manifest.json
+  summary_json: docs/audit/v37_replicate_separation_summary.json
+  summary_markdown: docs/audit/v37_replicate_separation_summary.md
+
+claim_boundary:
+  one_external_study: true
+  donor_pair_modalities_overlap: true
+  guide_disagreement_includes_off_target_and_knockdown_efficiency_not_only_assay_noise: true
+  replicate_consistency_supports_biology_but_does_not_prove_causal_purity: true
+
+references:
+  - Zhu et al. Cell 2026. doi:10.1016/j.cell.2026.08.002
+  - Author data artifact documentation. https://github.com/emdann/GWT_perturbseq_analysis_2025/blob/master/metadata/data_sharing_readme.md
+  - Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

@@ -1,0 +1,12 @@
+{
+  "status": "FROZEN_V35_METADATA_INSPECTOR_EXECUTION_REPAIR",
+  "frozen_at_utc": "2026-10-27T15:44:57.259873+00:00",
+  "pre_download_freeze_sha256": "fb3616b2b964fa799872cb7619cc317cd7988faaa7ca9dacde551629460c5235",
+  "original_inspector_sha256": "33490d30d22d214c74c27876d08aea3ae137dc9639d4e4759f646184156f03c5",
+  "repaired_inspector_sha256": "95b03dfe67328ab785ece4fe2278b0ba811a63ecd1b1f4c19a29dd5162d69c41",
+  "failure_point": "source AnnData close call before target-screen loop",
+  "repair": "replace source.close() with object release; no eligibility, partition, seed, or target-access logic changed",
+  "target_metadata_read_before_failure": false,
+  "target_expression_values_read": false,
+  "analysis_or_partition_change": false
+}

@@ -1,0 +1,123 @@
+protocol:
+  name: perturbcompass-k562-cross-study
+  version: 1
+  frozen_on: '2026-10-27'
+  analysis_type: frozen_same_cell_line_cross_study_held_out_target_confirmation
+  primary_source: essential
+  sensitivity_source: gwps
+inputs:
+  target_h5ad: data/raw/adamson_k562/AdamsonWeissman2016_GSM2406681_10X010.h5ad
+  target_expected_md5: 2fa44ea61a8dd35742af618638ec65fc
+  metadata_feasibility: docs/provenance/k562_cross_study/adamson_metadata_feasibility.json
+  sources:
+    essential:
+      h5ad: data/raw/replogle_k562/K562_essential_normalized_bulk_01.h5ad
+      expected_md5: 30496767641cd2e660ee6ecb5baee132
+    gwps:
+      h5ad: data/raw/replogle_k562/K562_gwps_normalized_bulk_01.h5ad
+      expected_md5: a3dfaa94ea8724217f5ecb1e14a5f0c8
+target_preprocessing:
+  label_column: perturbation
+  truncate_at: _
+  control_regex: \(
+  drop_labels:
+  - '*'
+  - nan
+  - NaN
+  - None
+  - ''
+  minimum_genes_per_cell: 200
+  minimum_cells_expressing_gene: 3
+  normalize_total_target_sum: 10000.0
+  transform: log1p
+  minimum_target_cells_after_qc: 50
+  control_folds: 5
+  control_fold_seed: 282801
+  held_out_control_fold_used_only_for_test_targets: true
+  remaining_control_folds_used_only_for_training_targets: true
+source_preprocessing:
+  minimum_cells_per_construct: 10
+  aggregate_constructs_by_num_cells_filtered_weighted_mean: true
+  require_finite_full_profile: true
+  common_measured_genes_only: true
+  require_target_gene_measured: true
+model:
+  program_count: 16
+  program_seed: 252516
+  outer_target_folds: 5
+  target_fold_seed: 262226
+  alpha_bounds:
+  - 0.0
+  - 1.5
+  scalar_ridge_alpha: 100.0
+  program_ridge_alpha: 10.0
+  centering_strength: 0.5
+  delta_scale: 1.0
+  top_signature_genes: 200
+  low_rank_components: 16
+  low_rank_ridge_alpha: 10.0
+  gene_wise_ridge_alpha: 10.0
+  random_program_partitions: 50
+  random_program_seed: 282802
+evaluation:
+  primary_metric: target_equal_macro_mse_on_source_top200_genes
+  primary_reference: source_feature_scalar_ridge
+  secondary_gene_sets:
+  - top100
+  - top500
+  - all
+  inferential_unit: perturbation_target_gene
+  bootstrap_repetitions: 10000
+  bootstrap_seed: 282803
+  sign_flip_repetitions: 50000
+  sign_flip_seed: 282804
+  multiple_testing: holm_across_primary_program_vs_baseline_comparisons
+  baselines:
+  - identity_source_effect
+  - training_fold_global_alpha
+  - source_feature_scalar_ridge
+  - gene_wise_diagonal_ridge
+  - low_rank_cross_gene_ridge
+  - exact_size_random_program_partitions
+confirmation_gate:
+  minimum_eligible_targets: 30
+  improvement_over_scalar_ridge_above: 0.0
+  bootstrap_ci95_low_above: 0.0
+  holm_adjusted_sign_flip_p_at_most: 0.05
+  targets_improved_fraction_at_least: 0.5
+  all_secondary_gene_sets_positive: true
+  random_program_exact_p_at_most: 0.05
+  sensitivity_source_improvement_over_scalar_positive: true
+publication_superiority_gate:
+  candidate_mean_mse_below_gene_wise_ridge: true
+  candidate_mean_mse_below_low_rank_ridge: true
+  holm_adjusted_p_at_most_for_each: 0.05
+outputs:
+  pre_run_manifest: docs/provenance/k562_cross_study/adamson_pre_run_manifest.json
+  record_metrics: results/reproduced/k562_cross_study/record_metrics.csv
+  bootstrap_metrics: results/reproduced/k562_cross_study/bootstrap_metrics.csv
+  sign_flip_metrics: results/reproduced/k562_cross_study/sign_flip_metrics.csv
+  random_program_metrics: results/reproduced/k562_cross_study/random_program_metrics.csv
+  summary_json: results/reproduced/k562_cross_study/adamson_cross_study_summary.json
+  summary_markdown: results/reproduced/k562_cross_study/adamson_cross_study_summary.md
+  output_audit: results/reproduced/k562_cross_study/adamson_output_audit.json
+claim_boundary:
+  same_cell_line: K562
+  same_intervention_class: CRISPRi
+  source_study: Replogle et al. 2022
+  target_study: Adamson et al. 2016
+  held_out_target_prediction_not_zero_shot_study_transfer: true
+  target_training_perturbations_are_used_for_cross_study_calibration: true
+  target_control_cells_are_used_to_construct_outcomes_not_as_predictor_features: true
+  control_cells_are_split_to_prevent_shared_control_noise_leakage: true
+  primary_claim_is_cross_study_program_shrinkage_benefit_over_scalar_calibration: true
+references:
+- Adamson et al. Cell 2016. doi:10.1016/j.cell.2016.11.048
+- Replogle et al. Cell 2022. doi:10.1016/j.cell.2022.05.013
+- Peidli et al. Nature Methods 2024. doi:10.1038/s41592-023-02144-y
+- Kassis et al. 2026. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065
+repository_reorganization:
+  classification: post_result_organizational_refactor_not_new_preregistration
+  original_protocol: docs/provenance/k562_cross_study/original_protocol.yaml
+  historical_records_preserved_without_edits: true
+  reference_results_are_immutable: true

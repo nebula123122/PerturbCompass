@@ -1,0 +1,13 @@
+{
+  "status": "FROZEN_TRANSPORT_ONLY_AMENDMENT_BEFORE_V35_TARGET_DOWNLOAD",
+  "frozen_at_utc": "2026-10-27T13:47:36.851800+00:00",
+  "pre_download_freeze_sha256": "fb3616b2b964fa799872cb7619cc317cd7988faaa7ca9dacde551629460c5235",
+  "config_sha256": "fb308927b73b970b990cd7f04dbfe11ebe55a47aa7e4ead0ac453dc307af1983",
+  "amendment_script_sha256": "6301101ae0cd1f5698144bbab6d57c930806d51e0b0a7a588f03826acedcc9f7",
+  "curl_version": "curl 7.61.1 (x86_64-koji-linux-gnu) libcurl/7.61.1 OpenSSL/1.1.1k zlib/1.2.11 brotli/1.0.6 libidn2/2.2.0 libpsl/0.20.2 (+libidn2/2.2.0) libssh/0.9.6/openssl/zlib nghttp2/1.33.0",
+  "failure": "installed curl rejects --retry-all-errors",
+  "amendment": "omit --retry-all-errors; preserve URL, destination, resume, expected size and MD5",
+  "analysis_or_partition_change": false,
+  "target_files_present": false,
+  "target_expression_values_read": false
+}

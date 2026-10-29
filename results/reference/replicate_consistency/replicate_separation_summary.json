@@ -1,0 +1,441 @@
+{
+  "status": "V37_REPLICATE_CONSISTENT_COMPONENT_CONFIRMED_ALL_CONTEXTS",
+  "generated_at_utc": "2026-10-28T06:03:48.310621+00:00",
+  "conditions": {
+    "Rest": {
+      "quality_score_anchor_tertile_cutpoints": [
+        -0.3429715604398119,
+        0.13846455382343653
+      ],
+      "guide": {
+        "eligible_targets": 255,
+        "modalities": {
+          "guide_1": {
+            "relative_improvement": 0.011237455646012084,
+            "mean_loss_reduction": 0.0017836672291973563,
+            "positive": true
+          },
+          "guide_2": {
+            "relative_improvement": 0.01126694648300619,
+            "mean_loss_reduction": 0.0018545507790738462,
+            "positive": true
+          }
+        },
+        "consensus_residual_vs_low_rank": {
+          "relative_improvement": 0.011252469033844359,
+          "bootstrap_ci95": [
+            0.009707620100419501,
+            0.012881472993677262
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8666666666666667,
+          "paired_mean_loss_reduction": 0.0018191090041356005,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "positive_modalities": 2,
+        "required_positive_modalities": 2,
+        "direction_requirement_passed": true,
+        "quality_tertile_diagnostic": {
+          "low": {
+            "targets": 27,
+            "relative_improvement": 0.0055205343598252465,
+            "mean_loss_reduction": 0.0010632611757047808
+          },
+          "middle": {
+            "targets": 90,
+            "relative_improvement": 0.01040483806012038,
+            "mean_loss_reduction": 0.0019260617455232425
+          },
+          "high": {
+            "targets": 138,
+            "relative_improvement": 0.01352108704586319,
+            "mean_loss_reduction": 0.0018972404870540376
+          }
+        },
+        "primary_component_passed": true
+      },
+      "donor": {
+        "eligible_targets": 183,
+        "modalities": {
+          "CE0006864_CE0008162": {
+            "relative_improvement": 0.007911374155511908,
+            "mean_loss_reduction": 0.0016639158546323677,
+            "positive": true
+          },
+          "CE0006864_CE0008678": {
+            "relative_improvement": 0.00881652403195532,
+            "mean_loss_reduction": 0.0020508345194404413,
+            "positive": true
+          },
+          "CE0006864_CE0010866": {
+            "relative_improvement": 0.009089947883150207,
+            "mean_loss_reduction": 0.0019078656881757429,
+            "positive": true
+          },
+          "CE0008162_CE0008678": {
+            "relative_improvement": 0.007551155817588362,
+            "mean_loss_reduction": 0.0018994794859047259,
+            "positive": true
+          },
+          "CE0008162_CE0010866": {
+            "relative_improvement": 0.006886577845510944,
+            "mean_loss_reduction": 0.0016241027972827935,
+            "positive": true
+          },
+          "CE0008678_CE0010866": {
+            "relative_improvement": 0.007971999207574743,
+            "mean_loss_reduction": 0.002038881677764148,
+            "positive": true
+          }
+        },
+        "consensus_residual_vs_low_rank": {
+          "relative_improvement": 0.008012470346353107,
+          "bootstrap_ci95": [
+            0.006408957179766311,
+            0.009706328120446141
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.825136612021858,
+          "paired_mean_loss_reduction": 0.0018641800038667045,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "positive_modalities": 6,
+        "required_positive_modalities": 5,
+        "direction_requirement_passed": true,
+        "quality_tertile_diagnostic": {
+          "low": {
+            "targets": 60,
+            "relative_improvement": 0.004965521349933999,
+            "mean_loss_reduction": 0.0014955587882791702
+          },
+          "middle": {
+            "targets": 59,
+            "relative_improvement": 0.008920440505421512,
+            "mean_loss_reduction": 0.0018379328212641728
+          },
+          "high": {
+            "targets": 64,
+            "relative_improvement": 0.011577449175156684,
+            "mean_loss_reduction": 0.0022339590149417264
+          }
+        },
+        "primary_component_passed": true
+      }
+    },
+    "Stim8hr": {
+      "quality_score_anchor_tertile_cutpoints": [
+        -0.29908470225846695,
+        0.14758517471437993
+      ],
+      "guide": {
+        "eligible_targets": 285,
+        "modalities": {
+          "guide_1": {
+            "relative_improvement": 0.01366212579567272,
+            "mean_loss_reduction": 0.0019512269026015167,
+            "positive": true
+          },
+          "guide_2": {
+            "relative_improvement": 0.011481673406452897,
+            "mean_loss_reduction": 0.0018212596508111615,
+            "positive": true
+          }
+        },
+        "consensus_residual_vs_low_rank": {
+          "relative_improvement": 0.012514744969043923,
+          "bootstrap_ci95": [
+            0.010816426454108222,
+            0.014304400540648132
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8596491228070176,
+          "paired_mean_loss_reduction": 0.0018862432767063379,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "positive_modalities": 2,
+        "required_positive_modalities": 2,
+        "direction_requirement_passed": true,
+        "quality_tertile_diagnostic": {
+          "low": {
+            "targets": 30,
+            "relative_improvement": 0.009393870693897743,
+            "mean_loss_reduction": 0.0014254256631535517
+          },
+          "middle": {
+            "targets": 108,
+            "relative_improvement": 0.011404896891668681,
+            "mean_loss_reduction": 0.001784601930272464
+          },
+          "high": {
+            "targets": 147,
+            "relative_improvement": 0.014047610617333506,
+            "mean_loss_reduction": 0.0020549629625664875
+          }
+        },
+        "primary_component_passed": true
+      },
+      "donor": {
+        "eligible_targets": 217,
+        "modalities": {
+          "CE0006864_CE0008162": {
+            "relative_improvement": 0.00787083111338116,
+            "mean_loss_reduction": 0.0015618212688728562,
+            "positive": true
+          },
+          "CE0006864_CE0008678": {
+            "relative_improvement": 0.009148269034192968,
+            "mean_loss_reduction": 0.0018981509781146732,
+            "positive": true
+          },
+          "CE0006864_CE0010866": {
+            "relative_improvement": 0.010392079952384892,
+            "mean_loss_reduction": 0.0019263956070260672,
+            "positive": true
+          },
+          "CE0008162_CE0008678": {
+            "relative_improvement": 0.007269500750279878,
+            "mean_loss_reduction": 0.001613048639791328,
+            "positive": true
+          },
+          "CE0008162_CE0010866": {
+            "relative_improvement": 0.008330580612617267,
+            "mean_loss_reduction": 0.0016795751321346721,
+            "positive": true
+          },
+          "CE0008678_CE0010866": {
+            "relative_improvement": 0.009156707318756063,
+            "mean_loss_reduction": 0.002056815242301292,
+            "positive": true
+          }
+        },
+        "consensus_residual_vs_low_rank": {
+          "relative_improvement": 0.00866194176969115,
+          "bootstrap_ci95": [
+            0.006952583754642377,
+            0.01052721286284662
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8387096774193549,
+          "paired_mean_loss_reduction": 0.0017893011447068182,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "positive_modalities": 6,
+        "required_positive_modalities": 5,
+        "direction_requirement_passed": true,
+        "quality_tertile_diagnostic": {
+          "low": {
+            "targets": 72,
+            "relative_improvement": 0.00430272309520674,
+            "mean_loss_reduction": 0.0010906947423418101
+          },
+          "middle": {
+            "targets": 68,
+            "relative_improvement": 0.011295288368047274,
+            "mean_loss_reduction": 0.0019510207701962305
+          },
+          "high": {
+            "targets": 77,
+            "relative_improvement": 0.01194139681036599,
+            "mean_loss_reduction": 0.002299726163369163
+          }
+        },
+        "primary_component_passed": true
+      }
+    },
+    "Stim48hr": {
+      "quality_score_anchor_tertile_cutpoints": [
+        -0.2811102934611391,
+        0.1175952650263665
+      ],
+      "guide": {
+        "eligible_targets": 258,
+        "modalities": {
+          "guide_1": {
+            "relative_improvement": 0.010166965885504808,
+            "mean_loss_reduction": 0.0012101540112204566,
+            "positive": true
+          },
+          "guide_2": {
+            "relative_improvement": 0.010317937790875531,
+            "mean_loss_reduction": 0.001268192178944372,
+            "positive": true
+          }
+        },
+        "consensus_residual_vs_low_rank": {
+          "relative_improvement": 0.010243663460449581,
+          "bootstrap_ci95": [
+            0.008825154975414607,
+            0.011715798232271507
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8410852713178295,
+          "paired_mean_loss_reduction": 0.0012391730950824134,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "positive_modalities": 2,
+        "required_positive_modalities": 2,
+        "direction_requirement_passed": true,
+        "quality_tertile_diagnostic": {
+          "low": {
+            "targets": 30,
+            "relative_improvement": 0.006147197824806994,
+            "mean_loss_reduction": 0.0008204881076508556
+          },
+          "middle": {
+            "targets": 89,
+            "relative_improvement": 0.008273316038059475,
+            "mean_loss_reduction": 0.001097379976676492
+          },
+          "high": {
+            "targets": 139,
+            "relative_improvement": 0.012819032881095649,
+            "mean_loss_reduction": 0.0014203251609894191
+          }
+        },
+        "primary_component_passed": true
+      },
+      "donor": {
+        "eligible_targets": 198,
+        "modalities": {
+          "CE0006864_CE0008162": {
+            "relative_improvement": 0.008728776415993567,
+            "mean_loss_reduction": 0.0014208767676944223,
+            "positive": true
+          },
+          "CE0006864_CE0008678": {
+            "relative_improvement": 0.0080989719068848,
+            "mean_loss_reduction": 0.0014456850126096526,
+            "positive": true
+          },
+          "CE0006864_CE0010866": {
+            "relative_improvement": 0.00929779808525899,
+            "mean_loss_reduction": 0.0015677355788673844,
+            "positive": true
+          },
+          "CE0008162_CE0008678": {
+            "relative_improvement": 0.007199462630819942,
+            "mean_loss_reduction": 0.0014078283649844993,
+            "positive": true
+          },
+          "CE0008162_CE0010866": {
+            "relative_improvement": 0.008105148133408235,
+            "mean_loss_reduction": 0.0015371717787596303,
+            "positive": true
+          },
+          "CE0008678_CE0010866": {
+            "relative_improvement": 0.0074500105234628355,
+            "mean_loss_reduction": 0.0015818120006816881,
+            "positive": true
+          }
+        },
+        "consensus_residual_vs_low_rank": {
+          "relative_improvement": 0.008091878297272204,
+          "bootstrap_ci95": [
+            0.006791982054440574,
+            0.009446730706368808
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8535353535353535,
+          "paired_mean_loss_reduction": 0.0014935182505995462,
+          "holm_adjusted_p": 5.999940000599994e-05
+        },
+        "positive_modalities": 6,
+        "required_positive_modalities": 5,
+        "direction_requirement_passed": true,
+        "quality_tertile_diagnostic": {
+          "low": {
+            "targets": 70,
+            "relative_improvement": 0.005783217532882801,
+            "mean_loss_reduction": 0.0013249444466716883
+          },
+          "middle": {
+            "targets": 61,
+            "relative_improvement": 0.008478972079267844,
+            "mean_loss_reduction": 0.0014367171338852392
+          },
+          "high": {
+            "targets": 67,
+            "relative_improvement": 0.011338478541470631,
+            "mean_loss_reduction": 0.0017213545848461548
+          }
+        },
+        "primary_component_passed": true
+      }
+    }
+  },
+  "target_program_assignment": {
+    "direct_gene_membership": 689,
+    "source_effect_energy_fallback": 52,
+    "fallback_targets": [
+      "ABCG1",
+      "ARHGAP11B",
+      "ARMC7",
+      "C16ORF86",
+      "CACNB3",
+      "CCDC78",
+      "CTBP2",
+      "CUL7",
+      "DNLZ",
+      "DPH1",
+      "F8A1",
+      "FAM229A",
+      "GSDMA",
+      "HS6ST1",
+      "IFITM3",
+      "JAZF1",
+      "KDM8",
+      "KLF7",
+      "KLHL11",
+      "LRRC37A3",
+      "LRRC37B",
+      "LTBP3",
+      "MOK",
+      "MST1",
+      "NBPF3",
+      "NDOR1",
+      "PC",
+      "PYROXD1",
+      "RHPN1",
+      "RNF103",
+      "SGPP1",
+      "SLC16A5",
+      "SLC4A5",
+      "SLC9B1",
+      "TIGD1",
+      "TREML2",
+      "TVP23C",
+      "WDR25",
+      "WDR7",
+      "YJEFN3",
+      "YPEL1",
+      "ZFP69B",
+      "ZNF133",
+      "ZNF236",
+      "ZNF253",
+      "ZNF284",
+      "ZNF492",
+      "ZNF559",
+      "ZNF658",
+      "ZNF674",
+      "ZNF687",
+      "ZNF718"
+    ]
+  },
+  "primary_joint_gate": {
+    "rule": {
+      "description": "in_each_of_three_conditions_both_guide_and_donor_consensus_improvement_CI_lower_bound_above_zero_and_direction_requirement_met",
+      "intersection_union_across_conditions": true,
+      "no_combining_conditions_as_independent_studies": true
+    },
+    "passed": true
+  },
+  "claim_boundary": {
+    "one_external_study": true,
+    "donor_pair_modalities_overlap": true,
+    "guide_disagreement_includes_off_target_and_knockdown_efficiency_not_only_assay_noise": true,
+    "replicate_consistency_supports_biology_but_does_not_prove_causal_purity": true,
+    "original_400_guide_and_700_donor_feasibility_gate_failed": true,
+    "continued_only_under_replicate_outcome_blind_metadata_adaptation": true,
+    "not_untouched_preregistered_mechanism_confirmation": true
+  }
+}

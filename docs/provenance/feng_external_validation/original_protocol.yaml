@@ -1,0 +1,140 @@
+protocol:
+  name: perturbcompass-v31-feng-targeted-external-validation
+  version: 1
+  frozen_on: "2026-10-27"
+  status: pre_download_external_confirmation_freeze
+  analysis_type: fixed_anchor_heldout_external_screen_validation
+  prediction_task: map_replogle_k562_essential_effects_to_feng_multi_ipsc_targeted_effects_for_heldout_targets
+
+parent:
+  v30_config: configs/v30_large_scale_residual_program_frozen.yaml
+  v30_summary: docs/audit/v30_large_scale_residual_program_summary.json
+  required_v30_status: V30_LARGE_SCALE_RESIDUAL_PROGRAM_CONFIRMED
+
+external_screen:
+  study: Feng_et_al_Cell_Genomics_2026
+  publication_doi: 10.1016/j.xgen.2025.101076
+  data_doi: 10.6084/m9.figshare.26819743.v1
+  perturbation_modality: CRISPRi
+  cell_context: pooled_human_iPSC_lines
+  target_set: authors_targeted_screen_selected_after_internal_genome_wide_screen
+  independent_from_replogle_and_adamson: true
+  independent_screen_count_added: 1
+
+inputs:
+  source_h5ad: data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad
+  source_expected_md5: 30496767641cd2e660ee6ecb5baee132
+  target_lfc: data/raw/v31_feng/TargetedScreen_LFC_byGene.tsv.gz
+  target_download_url: https://huggingface.co/datasets/Boom5426/iPSC-CRISPRi-PerturbSeq/resolve/main/feng2026_ipsc_crispri_map/lfc/TargetedScreen_LFC_byGene.tsv.gz?download=true
+  target_source_note: byte_identical_public_mirror_of_figshare_file_with_original_name
+  target_expected_minimum_bytes: 70000000
+  target_expected_maximum_bytes: 85000000
+  feng_metadata: data/raw/phase_b2_candidate_metadata/feng2026/TargetedScreen_Cell-Metadata.tsv.gz
+  feng_metadata_sha256: d6057946570edbbcd3406f4e55d8f338f602ef1b7cc71cffca101133e35b098d
+  blind_partition: data/derived/phase_c2/phase_c2_feng_partition.csv
+  blind_partition_sha256: 97dcd75b5c70a087c35cd2579bd49c73739a07e6325b1c770cbc19a97a19bd52
+  eligible_tasks: data/derived/phase_c2/phase_c2_feng_eligible_perturbations.csv
+  eligible_tasks_sha256: 7cad508b6c3dd804cc56b043b2b38de88660a1e7a66c4580bf922d61d69cad79
+
+target_table_contract:
+  separator: tab
+  compression: gzip
+  exact_required_columns: [Target, Expressed_Gene_Symbol, Expressed_Gene_Ens_ID, lfc, pval_adj]
+  value_column: lfc
+  target_case: uppercase
+  gene_case: uppercase
+  duplicate_target_gene_policy: error
+  missing_target_gene_policy: error
+  nonfinite_policy: error
+  outcome_dependent_target_or_gene_filtering: forbidden
+  common_gene_axis_rule: exact_symbol_intersection_preserving_sorted_symbols
+  minimum_common_genes: 5000
+
+partition:
+  anchor_role: anchor
+  heldout_role: test
+  expected_anchor_targets: 32
+  expected_heldout_targets: 68
+  reuse_blind_metadata_only_partition_from_phase_c2: true
+  no_repartition_after_target_access: true
+
+source_preprocessing:
+  minimum_cells_per_construct: 10
+  aggregate_constructs_by_num_cells_filtered_weighted_mean: true
+  require_all_100_partition_targets: true
+
+model:
+  inner_target_folds: 4
+  inner_fold_seed: 303002
+  fold_stratification: source_effect_rms_quintile_round_robin
+  program_count: 16
+  program_seed: 252516
+  low_rank_components: 16
+  low_rank_ridge_alpha: 10.0
+  scalar_ridge_alpha: 100.0
+  program_ridge_alpha: 10.0
+  direct_program_alpha_bounds: [0.0, 1.5]
+  direct_program_centering_strength: 0.5
+  residual_program_beta_bounds: [-0.75, 0.75]
+  residual_centering_strength: 1.0
+  top_signature_genes: 200
+  random_program_partitions: 100
+  random_program_seed: 313103
+  preprocessing_fit_within_anchor_only: true
+  source_only_program_learning_may_use_all_partition_source_profiles: true
+  no_hyperparameter_search: true
+
+evaluation:
+  primary_metric: heldout_target_equal_macro_mse_on_source_top200_genes
+  single_primary_comparison: residual_program_vs_low_rank
+  primary_alternative: residual_program_has_lower_loss
+  bootstrap_repetitions: 20000
+  bootstrap_seed: 313104
+  sign_flip_repetitions: 100000
+  sign_flip_seed: 313105
+  key_guardrail: residual_program_vs_gene_ridge_noninferiority
+  gene_ridge_noninferiority_relative_margin: -0.02
+  secondary_comparators: [gene_ridge, direct_program, scalar]
+  secondary_multiple_testing: holm
+  secondary_gene_sets: [top100, top500, all]
+  inferential_unit: heldout_perturbation_target_within_one_external_screen
+
+replication_gate:
+  minimum_relative_improvement_over_low_rank: 0.005
+  bootstrap_ci95_low_above: 0.0
+  sign_flip_one_sided_p_at_most: 0.05
+  targets_improved_fraction_at_least: 0.5
+  all_secondary_gene_sets_positive: true
+  random_program_exact_p_at_most: 0.05
+
+publication_strength_gate:
+  require_replication_gate: true
+  gene_ridge_point_noninferiority_relative_margin: -0.02
+  gene_ridge_bootstrap_ci95_low_above: -0.02
+
+outputs:
+  pre_download_freeze: docs/audit/v31_pre_download_freeze.json
+  pre_run_manifest: docs/audit/v31_pre_run_manifest.json
+  record_metrics: data/derived/v31_feng/v31_record_metrics.csv
+  random_program_metrics: data/derived/v31_feng/v31_random_program_metrics.csv
+  bootstrap_metrics: data/derived/v31_feng/v31_bootstrap_metrics.csv
+  sign_flip_metrics: data/derived/v31_feng/v31_sign_flip_metrics.csv
+  summary_json: docs/audit/v31_feng_external_summary.json
+  summary_markdown: docs/audit/v31_feng_external_summary.md
+  output_audit: docs/audit/v31_feng_external_output_audit.json
+
+claim_boundary:
+  target_screen_expression_values_were_unopened_before_v31_protocol_freeze: true
+  pooled_author_lfc_is_used_as_external_truth: true
+  target_set_was_selected_by_authors_after_their_internal_genome_wide_screen: true
+  independent_screen_is_the_generalization_unit: true
+  heldout_targets_do_not_create_multiple_independent_screens: true
+  task_level_inference_only_describes_within_screen_stability: true
+  one_external_screen_cannot_estimate_between_screen_variance: true
+  low_rank_is_operational_nuisance_mapping_not_proven_measurement_quality: true
+  residual_program_is_operational_structured_residual_not_proven_pure_biology: true
+  raw_count_reconstruction_remains_a_sensitivity_analysis: true
+
+references:
+  - Feng et al. Cell Genomics 2026. doi:10.1016/j.xgen.2025.101076
+  - Kassis et al. 2026. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

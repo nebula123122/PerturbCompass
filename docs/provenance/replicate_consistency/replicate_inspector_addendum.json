@@ -1,0 +1,12 @@
+{
+  "status": "FROZEN_BEFORE_V37_REPLICATE_DOWNLOAD_WITH_INSPECTOR",
+  "frozen_at_utc": "2026-10-27T17:23:37.868182+00:00",
+  "replicate_outcomes_read": false,
+  "artifact_states": {
+    "GWCD4i.DE_stats.by_donors.h5mu": false,
+    "GWCD4i.DE_stats.by_guide.h5mu": false
+  },
+  "config_sha256": "c7a336fe4bdd41e4374f748f0d6e04ed98aba045f59951802e356e2dbbcdff97",
+  "inspector_sha256": "b2c6c9724773eccac254f8278a4b116c042e6e278b1843473c2c96261f3d0ff9",
+  "eligibility_clarification_sha256": "2c09ab0fba1ec0aca7d6836857be01cdac2497ef7a4c5a0b39d9b60a19c4410a"
+}

@@ -1,0 +1,156 @@
+{
+  "stage": "V30 frozen large-scale internal development validation",
+  "generated_at_utc": "2026-10-27T05:01:16.224271+00:00",
+  "status": "V30_LARGE_SCALE_RESIDUAL_PROGRAM_CONFIRMED",
+  "source_shape": [
+    2285,
+    8563
+  ],
+  "target_shape": [
+    11258,
+    8248
+  ],
+  "eligible_targets": 1446,
+  "common_measured_genes": 8200,
+  "outer_fold_counts": {
+    "0": 290,
+    "1": 289,
+    "2": 289,
+    "3": 289,
+    "4": 289
+  },
+  "primary_comparison": {
+    "comparator": "low_rank",
+    "relative_improvement": 0.02110264162174358,
+    "bootstrap_ci95": [
+      0.015921381006411186,
+      0.026211368855997366
+    ],
+    "sign_flip_one_sided_p": 9.99990000099999e-06,
+    "targets_improved_fraction": 0.7219917012448133,
+    "paired_mean_loss_reduction": 0.002420731578176149,
+    "paired_loss_reduction_sd": 0.01263994260342398,
+    "cohen_dz": 0.19151444386467445,
+    "multiplicity_adjustment": "single_predeclared_primary_none",
+    "adjusted_p": 9.99990000099999e-06
+  },
+  "comparisons": [
+    {
+      "comparator": "low_rank",
+      "relative_improvement": 0.02110264162174358,
+      "bootstrap_ci95": [
+        0.015921381006411186,
+        0.026211368855997366
+      ],
+      "sign_flip_one_sided_p": 9.99990000099999e-06,
+      "targets_improved_fraction": 0.7219917012448133,
+      "paired_mean_loss_reduction": 0.002420731578176149,
+      "paired_loss_reduction_sd": 0.01263994260342398,
+      "cohen_dz": 0.19151444386467445,
+      "multiplicity_adjustment": "single_predeclared_primary_none",
+      "adjusted_p": 9.99990000099999e-06
+    },
+    {
+      "comparator": "gene_ridge",
+      "relative_improvement": -0.11375917734419483,
+      "bootstrap_ci95": [
+        -0.18432358378832883,
+        -0.04795157552654896
+      ],
+      "sign_flip_one_sided_p": 0.999920000799992,
+      "targets_improved_fraction": 0.47648686030428766,
+      "paired_mean_loss_reduction": -0.011469437408255593,
+      "paired_loss_reduction_sd": 0.1335882079403982,
+      "cohen_dz": -0.08585666044246065,
+      "multiplicity_adjustment": "holm_across_secondary_comparators",
+      "adjusted_p": 1.0
+    },
+    {
+      "comparator": "direct_program",
+      "relative_improvement": -0.08218384060530837,
+      "bootstrap_ci95": [
+        -0.19168664123465773,
+        0.009842503348115452
+      ],
+      "sign_flip_one_sided_p": 0.9440305596944031,
+      "targets_improved_fraction": 0.5899031811894883,
+      "paired_mean_loss_reduction": -0.008527708698043724,
+      "paired_loss_reduction_sd": 0.20679922500657896,
+      "cohen_dz": -0.041236656944785115,
+      "multiplicity_adjustment": "holm_across_secondary_comparators",
+      "adjusted_p": 1.0
+    },
+    {
+      "comparator": "scalar",
+      "relative_improvement": -0.04576281824421269,
+      "bootstrap_ci95": [
+        -0.15343928245497718,
+        0.04392158284901442
+      ],
+      "sign_flip_one_sided_p": 0.7945620543794562,
+      "targets_improved_fraction": 0.6154910096818811,
+      "paired_mean_loss_reduction": -0.004913902488027297,
+      "paired_loss_reduction_sd": 0.20789592635518833,
+      "cohen_dz": -0.023636357740035457,
+      "multiplicity_adjustment": "holm_across_secondary_comparators",
+      "adjusted_p": 1.0
+    }
+  ],
+  "secondary_gene_set_improvements_over_low_rank": {
+    "top100": 0.026943446002697713,
+    "top500": 0.01381128601946957,
+    "all": 0.0014218916240071877
+  },
+  "random_program_exact_p": 0.047619047619047616,
+  "random_program_mean_mse_quantiles": [
+    0.11314566582551369,
+    0.1138109984962437,
+    0.11420481810550068
+  ],
+  "rankings": [
+    {
+      "method": "gene_ridge",
+      "mean_mse_top200": 0.10082208465303118
+    },
+    {
+      "method": "direct_program",
+      "mean_mse_top200": 0.10376381336324304
+    },
+    {
+      "method": "scalar",
+      "mean_mse_top200": 0.10737761957325948
+    },
+    {
+      "method": "residual_program",
+      "mean_mse_top200": 0.11229152206128677
+    },
+    {
+      "method": "low_rank",
+      "mean_mse_top200": 0.11471225363946291
+    }
+  ],
+  "gates": {
+    "minimum_improvement": true,
+    "bootstrap_ci": true,
+    "sign_flip": true,
+    "target_fraction": true,
+    "secondary_gene_sets": true,
+    "random_program": true
+  },
+  "claim_boundary": {
+    "source_and_target_are_distinct_screens_but_from_same_replogle_2022_study": true,
+    "source_day6_essential_and_target_day8_gwps_use_different_libraries_and_sampling_days": true,
+    "target_profiles_were_used_in_prior_versions": true,
+    "this_is_large_scale_internal_development_validation_not_fresh_external_confirmation": true,
+    "adamson_v28_v29_remains_directional_cross_study_evidence_not_final_confirmation": true,
+    "low_rank_component_is_operational_nuisance_mapping_not_proven_measurement_quality": true,
+    "program_residual_is_operational_structured_residual_not_proven_pure_biology": true,
+    "another_untouched_external_confirmation_is_required_for_a_strong_algorithm_claim": true
+  },
+  "output_hashes": {
+    "record_metrics": "f8d481fe7c0c4d13d98709b0f7c4ca26e3a03b89d5b0e8ad7c6ebf8d00de722b",
+    "random_program_metrics": "f21753a23c0c9625595d61824f616e9d28586d0d762d2a7c27adb7bca96808c6",
+    "bootstrap_metrics": "3eb9b806463e720394358cbc375a365c77b2a44ff0eadb736fda1a3e09a265c2",
+    "sign_flip_metrics": "e73987b43c217b41c753bb41e1d30ec4512ad9bc03baf2329ab34cea0ca4c67d"
+  }
+}

@@ -1,0 +1,139 @@
+protocol:
+  name: perturbcompass-v35-prospective-equivalence-aware-selector
+  version: 1
+  frozen_on: "2026-10-27"
+  status: ready_for_pre_numeric_seal
+  analysis_type: jointly_frozen_two_screen_prospective_confirmation
+  objective: validate_anchor_only_equivalence_aware_calibration_family_decision
+
+source:
+  study: Replogle_et_al_2022
+  cell_context: K562
+  h5ad: data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad
+  expected_md5: 30496767641cd2e660ee6ecb5baee132
+  minimum_cells_per_construct: 10
+
+targets:
+  publication: Nadig_et_al_Nature_Genetics_2025
+  publication_doi: 10.1038/s41588-025-02169-3
+  common_study_caveat: HepG2_and_Jurkat_are_distinct_screens_from_one_external_study
+  expression_contract: scPertEval_X_is_normalized_log1p_expression_and_is_not_renormalized
+  label_column: perturbation
+  control_label: control
+  minimum_cells_per_target: 20
+  expected_common_genes: 7084
+  screens:
+    hepg2:
+      role: primary_confirmation
+      path: data/raw/v35_nadig/nadig25hepg2_processed_complete.h5ad
+      expected_size_bytes: 1236448196
+      expected_md5: 02681165b34557059b398959208f322f
+      expected_sha256: b25cd23e74b94c0fec44a00b8bdfd21673ad391068df56da9cf81f38bc692221
+    jurkat:
+      role: required_replication
+      path: data/raw/v35_nadig/nadig25jurkat_processed_complete.h5ad
+      expected_size_bytes: 2004474709
+      expected_md5: da5a6bba8ab2a9bb7ef610110107006e
+      expected_sha256: eaad2b2c58ed76d4d3e14c08f0d1602cff3e28445833d4885dd38029ac956ee8
+
+frozen_inputs:
+  pre_download_config: configs/v35_nadig_two_screen_predownload.yaml
+  pre_download_freeze: docs/audit/v35_pre_download_freeze.json
+  download_amendment: docs/audit/v35_download_compatibility_amendment.json
+  inspector_amendment: docs/audit/v35_metadata_inspector_close_amendment.json
+  metadata_report: docs/audit/v35_nadig_metadata_feasibility.json
+  shared_partition: data/derived/v35_nadig/v35_shared_partition.csv
+  shared_partition_sha256: ba8af2ddb9b1952a6ec720afe2638989990acd00035b6a135d48e84b7730b68b
+  eligible_targets: data/derived/v35_nadig/v35_shared_eligible_targets.csv
+  eligible_targets_sha256: 6d285cf2bf5c17d0bb6b37222c818d9347f54ad9470c5af0338a5b151479a6ce
+
+partition:
+  anchor_role: anchor
+  heldout_role: test
+  expected_anchor_targets: 256
+  expected_heldout_targets: 1004
+  common_partition_across_screens: true
+  no_repartition_after_numeric_access: true
+
+target_preprocessing:
+  use_X_only: true
+  second_library_size_normalization: forbidden
+  effect_definition: mean_normalized_log1p_perturbed_minus_disjoint_control_mean
+  control_split_seed: 350036
+  control_split_algorithm: sorted_control_obs_names_then_PCG64_permutation_alternating_halves
+  anchor_control_half: A
+  heldout_control_half: B
+  minimum_control_cells_per_half: 1000
+  perturbed_cells_are_disjoint_because_anchor_and_test_targets_are_disjoint: true
+
+model:
+  families: [direct_program, scalar, residual_program, low_rank, gene_ridge]
+  inner_target_folds: 4
+  inner_fold_seed: 303002
+  program_count: 16
+  program_seed: 252516
+  low_rank_components: 16
+  low_rank_ridge_alpha: 10.0
+  scalar_ridge_alpha: 100.0
+  program_ridge_alpha: 10.0
+  direct_program_alpha_bounds: [0.0, 1.5]
+  direct_program_centering_strength: 0.5
+  residual_program_beta_bounds: [-0.75, 0.75]
+  residual_centering_strength: 1.0
+  top_signature_genes: 200
+  anchor_oof_folds: 5
+  anchor_oof_seed: 350037
+  no_hyperparameter_search: true
+  preprocessing_fit_within_anchor_only: true
+  source_only_program_learning_may_use_all_partition_source_profiles: true
+
+selector:
+  primary_metric: target_equal_macro_mse_on_source_top200_genes
+  equivalence_relative_margin: 0.01
+  anchor_bootstrap_repetitions: 20000
+  anchor_bootstrap_seed: 350038
+  confident_leading_family_probability_at_least: 0.80
+  confident_action: choose_anchor_oof_mean_loss_winner
+  uncertain_action: equal_weight_ensemble_of_anchor_equivalent_families_plus_scalar
+  scalar_always_in_uncertain_ensemble: true
+  selection_is_screen_specific: true
+  test_outcomes_used_once_after_selection: true
+
+evaluation:
+  primary_estimand: selector_regret_relative_to_best_fixed_family_on_same_heldout_screen
+  primary_regret_definition: mean_selector_loss_divided_by_minimum_family_mean_loss_minus_one
+  primary_bootstrap_oracle: recompute_best_fixed_family_inside_each_target_bootstrap
+  bootstrap_repetitions: 20000
+  bootstrap_seed: 350039
+  primary_success_rule: both_screens_regret_upper_95pct_percentile_ci_at_most_0.02
+  required_screens: [hepg2, jurkat]
+  secondary_comparator: scalar
+  secondary_alternative: selector_has_lower_loss
+  sign_flip_repetitions: 100000
+  sign_flip_seed: 350040
+  secondary_multiple_testing: holm_across_two_screens
+  secondary_gene_scopes: [top100, top500, all]
+  inferential_unit: heldout_perturbation_target_within_screen
+
+outputs:
+  pre_numeric_manifest: docs/audit/v35_pre_numeric_manifest.json
+  anchor_oof_metrics: data/derived/v35_nadig/v35_anchor_oof_metrics.csv
+  heldout_metrics: data/derived/v35_nadig/v35_heldout_metrics.csv
+  bootstrap_regret: data/derived/v35_nadig/v35_bootstrap_regret.csv
+  summary_json: docs/audit/v35_nadig_prospective_summary.json
+  summary_markdown: docs/audit/v35_nadig_prospective_summary.md
+  output_audit: docs/audit/v35_nadig_output_audit.json
+
+claim_boundary:
+  confirmatory_claim_is_about_predeclared_anchor_only_family_selection: true
+  two_screens_are_not_two_independent_studies: true
+  target_level_bootstrap_quantifies_within_screen_target_stability_only: true
+  source_K562_and_targets_HepG2_Jurkat_are_cross_context: true
+  low_rank_is_operational_mapping_not_proven_measurement_quality: true
+  residual_program_is_operational_structure_not_proven_pure_biology: true
+  biological_state_and_measurement_quality_are_not_identified_without_stronger_replicate_design: true
+
+references:
+  - Nadig et al. Nature Genetics 2025. doi:10.1038/s41588-025-02169-3
+  - scPertEval dataset and input-data documentation. https://scperteval.readthedocs.io/
+  - Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

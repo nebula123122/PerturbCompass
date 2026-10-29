@@ -1,0 +1,170 @@
+{
+  "status": "V35_PROSPECTIVE_SELECTOR_NOT_CONFIRMED_BOTH_SCREENS",
+  "generated_at_utc": "2026-10-27T16:08:33.924605+00:00",
+  "pre_numeric_manifest_sha256": "019204c7e4fb1173842e5a332025fe00a0620fbcdfca6ec5538e36cb95324ac7",
+  "common_genes": 7084,
+  "anchor_targets": 256,
+  "heldout_targets": 1004,
+  "screens": {
+    "hepg2": {
+      "role": "primary_confirmation",
+      "data": {
+        "control_cells": 4976,
+        "control_half_a": 2488,
+        "control_half_b": 2488,
+        "target_cells_min": 30,
+        "target_cells_median": 56.0,
+        "target_cells_max": 1213,
+        "nonzero_fraction": 0.9995462611922239
+      },
+      "selector": {
+        "mode": "uncertain_equivalence_ensemble",
+        "anchor_winner": "residual_program",
+        "selected_members": [
+          "scalar",
+          "residual_program"
+        ],
+        "equivalent_families": [
+          "residual_program"
+        ],
+        "anchor_mean_losses": {
+          "direct_program": 0.019942542020123074,
+          "scalar": 0.021510025970499533,
+          "residual_program": 0.015386528804696395,
+          "low_rank": 0.015544269660495047,
+          "gene_ridge": 0.017253165325159775
+        },
+        "bootstrap_selection_frequency": {
+          "direct_program": 0.0,
+          "scalar": 0.0,
+          "residual_program": 0.6854,
+          "low_rank": 0.31455,
+          "gene_ridge": 5e-05
+        },
+        "leading_probability": 0.6854,
+        "confidence_threshold": 0.8
+      },
+      "heldout": {
+        "targets": 1004,
+        "selector_mean_mse_top200": 0.014813010597152891,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.019260655456077275,
+          "scalar": 0.020732832086355228,
+          "residual_program": 0.01427520252054024,
+          "low_rank": 0.014671190085890889,
+          "gene_ridge": 0.015828322735579957
+        },
+        "oracle_fixed_family": "residual_program",
+        "selector_regret": 0.03767428699094166,
+        "selector_regret_bootstrap_ci95": [
+          0.010457330279232924,
+          0.06568909978628176
+        ],
+        "primary_gate_upper_ci_at_most_0_02": false,
+        "selector_vs_scalar": {
+          "relative_improvement": 0.28552883969471365,
+          "bootstrap_ci95": [
+            0.2674190454304179,
+            0.30240366572064414
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.8904382470119522,
+          "paired_mean_loss_reduction": 0.00591982148920234,
+          "holm_adjusted_p": 1.999980000199998e-05
+        },
+        "scope_relative_improvement_vs_scalar": {
+          "top100": 0.23834732166099637,
+          "top200": 0.28552883969471365,
+          "top500": 0.3215258859418717,
+          "all": 0.2903848141441545
+        }
+      }
+    },
+    "jurkat": {
+      "role": "required_replication",
+      "data": {
+        "control_cells": 12013,
+        "control_half_a": 6007,
+        "control_half_b": 6006,
+        "target_cells_min": 30,
+        "target_cells_median": 99.0,
+        "target_cells_max": 2555,
+        "nonzero_fraction": 0.9998383345433035
+      },
+      "selector": {
+        "mode": "confident_single_family",
+        "anchor_winner": "residual_program",
+        "selected_members": [
+          "residual_program"
+        ],
+        "equivalent_families": [
+          "residual_program"
+        ],
+        "anchor_mean_losses": {
+          "direct_program": 0.01880606010800361,
+          "scalar": 0.020733479631864317,
+          "residual_program": 0.016360435222564255,
+          "low_rank": 0.01712640352525341,
+          "gene_ridge": 0.01747904327043987
+        },
+        "bootstrap_selection_frequency": {
+          "direct_program": 0.0006,
+          "scalar": 0.0,
+          "residual_program": 0.92,
+          "low_rank": 0.0,
+          "gene_ridge": 0.0794
+        },
+        "leading_probability": 0.92,
+        "confidence_threshold": 0.8
+      },
+      "heldout": {
+        "targets": 1004,
+        "selector_mean_mse_top200": 0.014820080134668,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.017585815123293387,
+          "scalar": 0.019776305365382232,
+          "residual_program": 0.014820080134668,
+          "low_rank": 0.015329267541864939,
+          "gene_ridge": 0.015837866270860392
+        },
+        "oracle_fixed_family": "residual_program",
+        "selector_regret": 8.881784197001252e-16,
+        "selector_regret_bootstrap_ci95": [
+          -1.6653345369377348e-15,
+          1.5543122344752192e-15
+        ],
+        "primary_gate_upper_ci_at_most_0_02": true,
+        "selector_vs_scalar": {
+          "relative_improvement": 0.2506143154216227,
+          "bootstrap_ci95": [
+            0.20951839557571222,
+            0.29193819988195063
+          ],
+          "sign_flip_one_sided_p": 9.99990000099999e-06,
+          "targets_improved_fraction": 0.7181274900398407,
+          "paired_mean_loss_reduction": 0.004956225230714229,
+          "holm_adjusted_p": 1.999980000199998e-05
+        },
+        "scope_relative_improvement_vs_scalar": {
+          "top100": 0.1842905319578101,
+          "top200": 0.2506143154216227,
+          "top500": 0.2941722744713222,
+          "all": 0.2603114383134153
+        }
+      }
+    }
+  },
+  "primary_joint_gate": {
+    "rule": "both_screens_regret_upper_95pct_percentile_ci_at_most_0.02",
+    "passed": false
+  },
+  "claim_boundary": {
+    "confirmatory_claim_is_about_predeclared_anchor_only_family_selection": true,
+    "two_screens_are_not_two_independent_studies": true,
+    "target_level_bootstrap_quantifies_within_screen_target_stability_only": true,
+    "source_K562_and_targets_HepG2_Jurkat_are_cross_context": true,
+    "low_rank_is_operational_mapping_not_proven_measurement_quality": true,
+    "residual_program_is_operational_structure_not_proven_pure_biology": true,
+    "biological_state_and_measurement_quality_are_not_identified_without_stronger_replicate_design": true
+  }
+}

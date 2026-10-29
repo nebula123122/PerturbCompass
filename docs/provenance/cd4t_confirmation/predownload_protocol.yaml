@@ -1,0 +1,108 @@
+protocol:
+  name: perturbcompass-v36-cd4t-anchor-probability-model-averaging
+  version: 1
+  frozen_on: "2026-10-28"
+  stage: pre_download_metadata_only_design
+  analysis_type: prospective_three_context_external_confirmation
+  objective: validate_anchor_probability_weighted_family_decision_on_unseen_primary_cells
+
+development_history:
+  v35_summary: docs/audit/v35_nadig_prospective_summary.json
+  v35_status: V35_PROSPECTIVE_SELECTOR_NOT_CONFIRMED_BOTH_SCREENS
+  outcome_informed_revision: remove_forced_scalar_and_use_bootstrap_best_probability_model_averaging_when_ambiguous
+  v35_outcomes_must_never_be_reused_as_v36_confirmation: true
+
+source:
+  study: Replogle_et_al_2022
+  cell_context: K562
+  modality: CRISPRi
+  h5ad: data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad
+  expected_md5: 30496767641cd2e660ee6ecb5baee132
+  minimum_cells_per_construct: 10
+
+target:
+  study: Zhu_Dann_et_al_Cell_2026
+  publication_doi: 10.1016/j.cell.2026.08.002
+  cell_context: primary_human_CD4_T_cells
+  donors: 4
+  conditions: [Rest, Stim8hr, Stim48hr]
+  independent_external_study_count_added: 1
+  correlated_context_caveat: three_conditions_and_four_donors_are_not_three_independent_studies
+  public_s3_bucket: genome-scale-tcell-perturb-seq
+  public_s3_prefix: marson2025_data
+  main_artifact:
+    key: marson2025_data/GWCD4i.DE_stats.h5ad
+    url: https://genome-scale-tcell-perturb-seq.s3.us-west-2.amazonaws.com/marson2025_data/GWCD4i.DE_stats.h5ad
+    path: data/raw/v36_cd4t/GWCD4i.DE_stats.h5ad
+    expected_size_bytes: 16786240107
+    expected_s3_etag: c9ff52fcc6d6ce8a387a76dc757a5b97-2002
+  metadata_table:
+    key: marson2025_data/suppl_tables/DE_stats.suppl_table.csv
+    url: https://genome-scale-tcell-perturb-seq.s3.us-west-2.amazonaws.com/marson2025_data/suppl_tables/DE_stats.suppl_table.csv
+    path: data/raw/v36_cd4t/DE_stats.suppl_table.csv
+    expected_size_bytes: 7276533
+    expected_s3_etag: 7e97202a40cbd8981416be12daa36931
+  later_quality_artifacts:
+    donor_pairs:
+      key: marson2025_data/GWCD4i.DE_stats.by_donors.h5mu
+      size_bytes: 16866278447
+      etag: 1f405d8c2d202c6e845c1d11e59f2e47-2011
+    guides:
+      key: marson2025_data/GWCD4i.DE_stats.by_guide.h5mu
+      size_bytes: 29424424894
+      etag: 2e6705636ebaa276c7bc7c5a148ad096-3508
+  forbidden_download: cell_level_files_totaling_over_1_7_TB
+
+metadata_only_eligibility:
+  allowed_obs_columns: [target_contrast_gene_name, culture_condition, n_cells_target, n_guides]
+  forbidden_obs_columns_include: [ontarget_effect_size, ontarget_significant, n_total_de_genes, n_downstream, guide_correlation_all, donor_correlation_all_mean]
+  target_gene_case: uppercase
+  require_presence_in_all_conditions: true
+  require_source_target_overlap: true
+  require_target_is_measured_gene: true
+  minimum_cells_per_target_per_condition: 20
+  minimum_guides_per_target_per_condition: 1
+  minimum_shared_eligible_targets: 1100
+  outcome_dependent_filtering: forbidden
+  target_log_fc_lfcSE_zscore_and_all_other_numeric_layers_unread: true
+
+partition:
+  common_partition_across_conditions: true
+  anchor_targets: 256
+  anchor_role: anchor
+  heldout_role: test
+  seed: 360036
+  strata:
+    - source_effect_rms_quintile
+    - minimum_target_cell_count_quartile
+    - minimum_guide_count_single_vs_multiple
+  no_repartition_after_numeric_access: true
+
+future_final_protocol_locked_choices:
+  model_families: [direct_program, scalar, residual_program, low_rank, gene_ridge]
+  primary_gene_scope: source_top200_per_target
+  source_program_count: 16
+  anchor_oof_folds: 5
+  anchor_bootstrap_repetitions: 20000
+  dominant_family_probability_threshold: 0.80
+  dominant_action: choose_anchor_oof_mean_loss_winner
+  ambiguous_action: bootstrap_best_probability_weighted_average_of_all_families
+  forced_baseline_inclusion: false
+  probability_smoothing: none
+  test_outcomes_used_once: true
+  required_primary_conditions: [Rest, Stim8hr, Stim48hr]
+  primary_success_rule: all_three_conditions_selector_oracle_regret_upper_ci_at_most_0.02
+  secondary_comparators: [scalar, low_rank]
+  context_level_unit_caveat: conditions_share_study_donors_and_protocol
+
+outputs:
+  pre_download_freeze: docs/audit/v36_pre_download_freeze.json
+  s3_inventory: docs/audit/v36_cd4t_s3_inventory.json
+  metadata_report: docs/audit/v36_cd4t_metadata_feasibility.json
+  shared_partition: data/derived/v36_cd4t/v36_shared_partition.csv
+  eligible_targets: data/derived/v36_cd4t/v36_shared_eligible_targets.csv
+
+references:
+  - Zhu et al. Cell 2026. doi:10.1016/j.cell.2026.08.002
+  - Virtual Cells Platform Primary Human CD4+ T Cell Perturb-seq v1.0
+  - Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

@@ -1,0 +1,154 @@
+{
+  "stage": "V31 frozen Feng external validation",
+  "generated_at_utc": "2026-10-27T10:02:11.559716+00:00",
+  "status": "V31_EXTERNAL_REPLICATION_AND_GENE_RIDGE_NONINFERIOR",
+  "source_shape": [
+    2285,
+    8563
+  ],
+  "anchor_targets": 32,
+  "heldout_targets": 68,
+  "common_measured_genes": 5679,
+  "target_file_md5": "f75a54e972e14dad2465070e2108f58a",
+  "primary_comparison": {
+    "comparator": "low_rank",
+    "relative_improvement": 0.09155657363951586,
+    "bootstrap_ci95": [
+      0.06633525099679767,
+      0.12082177155316216
+    ],
+    "sign_flip_one_sided_p": 9.99990000099999e-06,
+    "targets_improved_fraction": 0.8382352941176471,
+    "paired_mean_loss_reduction": 0.0002494866866027919,
+    "paired_loss_reduction_sd": 0.00036330178877525714,
+    "cohen_dz": 0.6867202262995941,
+    "multiplicity_adjustment": "single_predeclared_primary_none",
+    "adjusted_p": 9.99990000099999e-06
+  },
+  "comparisons": [
+    {
+      "comparator": "low_rank",
+      "relative_improvement": 0.09155657363951586,
+      "bootstrap_ci95": [
+        0.06633525099679767,
+        0.12082177155316216
+      ],
+      "sign_flip_one_sided_p": 9.99990000099999e-06,
+      "targets_improved_fraction": 0.8382352941176471,
+      "paired_mean_loss_reduction": 0.0002494866866027919,
+      "paired_loss_reduction_sd": 0.00036330178877525714,
+      "cohen_dz": 0.6867202262995941,
+      "multiplicity_adjustment": "single_predeclared_primary_none",
+      "adjusted_p": 9.99990000099999e-06
+    },
+    {
+      "comparator": "gene_ridge",
+      "relative_improvement": 0.09456916720355424,
+      "bootstrap_ci95": [
+        0.06605116754764871,
+        0.12961998170986921
+      ],
+      "sign_flip_one_sided_p": 9.99990000099999e-06,
+      "targets_improved_fraction": 0.8235294117647058,
+      "paired_mean_loss_reduction": 0.00025855325846547766,
+      "paired_loss_reduction_sd": 0.00043048896859430077,
+      "cohen_dz": 0.6006036793689413,
+      "multiplicity_adjustment": "holm_across_secondary_comparators",
+      "adjusted_p": 2.999970000299997e-05
+    },
+    {
+      "comparator": "direct_program",
+      "relative_improvement": -0.20798290423259091,
+      "bootstrap_ci95": [
+        -0.297025432521289,
+        -0.11562714812983475
+      ],
+      "sign_flip_one_sided_p": 0.999990000099999,
+      "targets_improved_fraction": 0.35294117647058826,
+      "paired_mean_loss_reduction": -0.00042620896509000186,
+      "paired_loss_reduction_sd": 0.0011281656837855418,
+      "cohen_dz": -0.3777893364562061,
+      "multiplicity_adjustment": "holm_across_secondary_comparators",
+      "adjusted_p": 1.0
+    },
+    {
+      "comparator": "scalar",
+      "relative_improvement": -0.09266032953691838,
+      "bootstrap_ci95": [
+        -0.20411287316834342,
+        0.01980103779573413
+      ],
+      "sign_flip_one_sided_p": 0.9211007889921101,
+      "targets_improved_fraction": 0.5147058823529411,
+      "paired_mean_loss_reduction": -0.00020992511271091682,
+      "paired_loss_reduction_sd": 0.001207342103542839,
+      "cohen_dz": -0.17387376129343132,
+      "multiplicity_adjustment": "holm_across_secondary_comparators",
+      "adjusted_p": 1.0
+    }
+  ],
+  "secondary_gene_set_improvements_over_low_rank": {
+    "top100": 0.11035526205789858,
+    "top500": 0.06496036411124495,
+    "all": 0.014513172104898775
+  },
+  "random_program_exact_p": 0.009900990099009901,
+  "random_program_mean_mse_quantiles": [
+    0.002597149061198762,
+    0.002618702463949565,
+    0.0026446730807505882
+  ],
+  "rankings": [
+    {
+      "method": "direct_program",
+      "mean_mse_top200": 0.002049249993227159
+    },
+    {
+      "method": "scalar",
+      "mean_mse_top200": 0.002265533845606244
+    },
+    {
+      "method": "residual_program",
+      "mean_mse_top200": 0.0024754589583171607
+    },
+    {
+      "method": "low_rank",
+      "mean_mse_top200": 0.0027249456449199524
+    },
+    {
+      "method": "gene_ridge",
+      "mean_mse_top200": 0.002734012216782638
+    }
+  ],
+  "replication_gates": {
+    "minimum_improvement": true,
+    "bootstrap_ci": true,
+    "sign_flip": true,
+    "target_fraction": true,
+    "secondary_gene_sets": true,
+    "random_program": true
+  },
+  "publication_strength_gates": {
+    "replication": true,
+    "gene_ridge_point_noninferiority": true,
+    "gene_ridge_ci_noninferiority": true
+  },
+  "claim_boundary": {
+    "target_screen_expression_values_were_unopened_before_v31_protocol_freeze": true,
+    "pooled_author_lfc_is_used_as_external_truth": true,
+    "target_set_was_selected_by_authors_after_their_internal_genome_wide_screen": true,
+    "independent_screen_is_the_generalization_unit": true,
+    "heldout_targets_do_not_create_multiple_independent_screens": true,
+    "task_level_inference_only_describes_within_screen_stability": true,
+    "one_external_screen_cannot_estimate_between_screen_variance": true,
+    "low_rank_is_operational_nuisance_mapping_not_proven_measurement_quality": true,
+    "residual_program_is_operational_structured_residual_not_proven_pure_biology": true,
+    "raw_count_reconstruction_remains_a_sensitivity_analysis": true
+  },
+  "output_hashes": {
+    "record_metrics": "e87edf49b038fd9fd7280431be3934750783125ebb153f9a58ed7f08a2a7f454",
+    "random_program_metrics": "86cd328df94324b2f5b9f611cd97db21817300d685a10acdcb29bb06f7fa5873",
+    "bootstrap_metrics": "a78558d2b9551dee1dc45f5f6be529f7aae785f46f8a681232d5df91b76ea65f",
+    "sign_flip_metrics": "6760297990d231fc498030e94c7277fa6fe43da61d7b80eed8e30f1d3f98512e"
+  }
+}

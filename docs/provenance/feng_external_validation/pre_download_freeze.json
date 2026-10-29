@@ -1,0 +1,15 @@
+{
+  "status": "FROZEN_BEFORE_V31_TARGET_OUTCOME_DOWNLOAD",
+  "frozen_at_utc": "2026-10-27T07:39:51.681815+00:00",
+  "config_sha256": "f7b9ec4c228c5471bf28730cadceb9685b6b888a1ad625a690b70ba4763db695",
+  "runner_sha256": "0703c1ebd81c9fbd65404773297147f2a7ddd71d03303bef7b665582a0c02789",
+  "source_sha256": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829",
+  "source_md5": "30496767641cd2e660ee6ecb5baee132",
+  "metadata_sha256": "d6057946570edbbcd3406f4e55d8f338f602ef1b7cc71cffca101133e35b098d",
+  "partition_sha256": "97dcd75b5c70a087c35cd2579bd49c73739a07e6325b1c770cbc19a97a19bd52",
+  "eligible_tasks_sha256": "7cad508b6c3dd804cc56b043b2b38de88660a1e7a66c4580bf922d61d69cad79",
+  "target_outcome_file_present": false,
+  "target_outcome_values_read": false,
+  "genome_wide_rejection_reason": "explicit controls insufficient in metadata: 36 fitness and 12 nonfitness",
+  "selection_note": "Targeted screen selected by metadata/control adequacy before outcome access."
+}

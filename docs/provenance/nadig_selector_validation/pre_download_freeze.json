@@ -1,0 +1,17 @@
+{
+  "status": "FROZEN_BEFORE_V35_TARGET_DOWNLOAD",
+  "frozen_at_utc": "2026-10-27T13:43:43.406598+00:00",
+  "config_sha256": "fb308927b73b970b990cd7f04dbfe11ebe55a47aa7e4ead0ac453dc307af1983",
+  "metadata_inspector_sha256": "33490d30d22d214c74c27876d08aea3ae137dc9639d4e4759f646184156f03c5",
+  "downloader_sha256": "74f343e572069e7e1a72316bf3c997b7fbdedc816acf03ab9fe1fb59a3c10672",
+  "source_sha256": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829",
+  "source_md5": "30496767641cd2e660ee6ecb5baee132",
+  "target_files_present": false,
+  "target_expression_values_read": false,
+  "jointly_frozen_screens": [
+    "hepg2",
+    "jurkat"
+  ],
+  "design_note": "HepG2 primary and Jurkat required replication were jointly selected from publication and HTTP metadata only.",
+  "independent_unit_note": "Targets are paired units within screens; the two screens arise from one external study."
+}

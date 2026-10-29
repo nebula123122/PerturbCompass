@@ -1,0 +1,33 @@
+{
+  "status": "V36_ALLOWED_METADATA_MISSINGNESS_DIAGNOSED_WITHOUT_OUTCOME_ACCESS",
+  "generated_at_utc": "2026-10-28T04:06:22.101779+00:00",
+  "target_outcome_layers_read": false,
+  "allowed_columns_read": [
+    "target_contrast_gene_name",
+    "culture_condition",
+    "n_cells_target",
+    "n_guides"
+  ],
+  "rows": 33983,
+  "missing_by_column": {
+    "target_contrast_gene_name": 0,
+    "culture_condition": 0,
+    "n_cells_target": 0,
+    "n_guides": 3
+  },
+  "rows_with_any_label_missing": 0,
+  "rows_with_any_numeric_missing": 3,
+  "rows_with_any_allowed_field_missing": 3,
+  "complete_rows": 33980,
+  "conditions_on_invalid_rows": {
+    "Rest": 1,
+    "Stim48hr": 1,
+    "Stim8hr": 1
+  },
+  "target_examples_on_invalid_rows": [
+    "MYO18A",
+    "MYO18A",
+    "MYO18A"
+  ],
+  "proposed_fail_closed_rule": "exclude rows missing any allowed label/count before all other frozen eligibility criteria; do not impute counts"
+}

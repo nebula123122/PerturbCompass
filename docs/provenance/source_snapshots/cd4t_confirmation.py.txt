@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+"""Run the sealed V36 three-context external prospective confirmation."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import anndata as ad
+import h5py
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "configs/v36_cd4t_frozen.yaml"
+COMPATIBILITY_AMENDMENT = ROOT / "docs/audit/v36_target_program_compatibility_amendment.json"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+V28 = load_module("v28_v36_run", ROOT / "scripts/run_v28_adamson_cross_study.py")
+V30 = load_module("v30_v36_run", ROOT / "scripts/run_v30_large_scale_residual_program.py")
+V33 = load_module("v33_v36_run", ROOT / "scripts/run_v33_anchor_family_selector.py")
+V35 = load_module("v35_v36_run", ROOT / "scripts/run_v35_nadig_prospective_selector.py")
+META = load_module("meta_v36_run", ROOT / "scripts/inspect_v36_cd4t_metadata.py")
+
+
+def root_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path.resolve() if path.is_absolute() else (ROOT / path).resolve()
+
+
+def digest(path: Path, algorithm: str = "sha256") -> str:
+    value = hashlib.new(algorithm)
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(16 * 1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def choose_probability_selector(
+    losses: np.ndarray,
+    families: list[str],
+    bootstrap_repetitions: int,
+    seed: int,
+    confidence_threshold: float,
+) -> dict[str, Any]:
+    """Choose a clear OOF winner or use bootstrap best-family probabilities as weights."""
+    if losses.ndim != 2 or losses.shape[1] != len(families) or not np.isfinite(losses).all():
+        raise ValueError("loss matrix is invalid")
+    means = losses.mean(axis=0)
+    winner = int(np.argmin(means))
+    rng = np.random.default_rng(seed)
+    counts = np.zeros(len(families), dtype=np.int64)
+    for start in range(0, bootstrap_repetitions, 1000):
+        size = min(1000, bootstrap_repetitions - start)
+        rows = rng.integers(0, losses.shape[0], size=(size, losses.shape[0]))
+        boot = losses[rows].mean(axis=1)
+        counts += np.bincount(np.argmin(boot, axis=1), minlength=len(families))
+    probabilities = counts.astype(float) / float(bootstrap_repetitions)
+    if probabilities[winner] >= confidence_threshold:
+        weights = np.zeros(len(families), dtype=float)
+        weights[winner] = 1.0
+        mode = "dominant_single_family"
+    else:
+        weights = probabilities / probabilities.sum()
+        mode = "ambiguous_probability_model_average"
+    return {
+        "mode": mode,
+        "anchor_winner": families[winner],
+        "leading_probability": float(probabilities[winner]),
+        "anchor_mean_losses": {family: float(means[i]) for i, family in enumerate(families)},
+        "bootstrap_best_probability": {family: float(probabilities[i]) for i, family in enumerate(families)},
+        "weights": {family: float(weights[i]) for i, family in enumerate(families)},
+        "weight_vector": weights,
+        "confidence_threshold": float(confidence_threshold),
+    }
+
+
+def weighted_prediction(predictions: dict[str, np.ndarray], families: list[str], weights: np.ndarray) -> np.ndarray:
+    stack = np.stack([predictions[family] for family in families], axis=0)
+    return np.tensordot(weights, stack, axes=(0, 0)).astype(np.float32)
+
+
+def assign_target_programs(
+    targets: list[str],
+    genes: list[str],
+    labels: np.ndarray,
+    source_effects: np.ndarray,
+) -> tuple[np.ndarray, list[str]]:
+    """Assign target-gene programs, with a deterministic source-only fallback."""
+    gene_to_index = {gene: i for i, gene in enumerate(genes)}
+    program_count = int(labels.max()) + 1
+    group = (labels[:, None] == np.arange(program_count)[None, :]).astype(float)
+    counts = group.sum(axis=0)
+    if np.any(counts == 0):
+        raise RuntimeError("empty gene program")
+    source_energy = (source_effects.astype(float) ** 2) @ group / counts[None, :]
+    missing: list[str] = []
+    assignments = np.empty(len(targets), dtype=int)
+    for index, target in enumerate(targets):
+        if target in gene_to_index:
+            assignments[index] = int(labels[gene_to_index[target]])
+        else:
+            missing.append(target)
+            assignments[index] = int(np.argmax(source_energy[index]))
+    return assignments, missing
+
+
+def target_log_fc(
+    path: Path,
+    genes: list[str],
+    targets: list[str],
+    condition: str,
+    layer_name: str,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Read only one frozen condition and the frozen common genes from a dense H5AD layer."""
+    with h5py.File(path, "r") as handle:
+        obs = handle["obs"]
+        var = handle["var"]
+        obs_targets = np.asarray(META.read_frame_column(obs, "target_contrast_gene_name"), dtype=str)
+        obs_targets = np.char.upper(np.char.strip(obs_targets))
+        obs_conditions = np.asarray(META.read_frame_column(obs, "culture_condition"), dtype=str)
+        obs_conditions = np.char.strip(obs_conditions)
+        measured = META.read_frame_column(var, "gene_name") if "gene_name" in var else META.read_index(var)
+        lookup: dict[str, int] = {}
+        for index, value in enumerate(measured):
+            token = str(value).strip().upper()
+            if token and token not in lookup:
+                lookup[token] = index
+        missing_genes = [gene for gene in genes if gene not in lookup]
+        if missing_genes:
+            raise RuntimeError(f"target H5AD lost {len(missing_genes)} frozen genes")
+        row_map = {
+            str(target): int(index)
+            for index, target in enumerate(obs_targets)
+            if obs_conditions[index] == condition and target in set(targets)
+        }
+        missing_targets = [target for target in targets if target not in row_map]
+        if missing_targets:
+            raise RuntimeError(f"{condition} lacks frozen targets: {missing_targets[:20]}")
+        node = handle["layers"][layer_name]
+        if not isinstance(node, h5py.Dataset) or node.ndim != 2:
+            raise RuntimeError(f"{layer_name} is not a dense HDF5 matrix")
+        row_indices = np.asarray([row_map[target] for target in targets], dtype=np.int64)
+        order = np.argsort(row_indices, kind="stable")
+        sorted_block = np.asarray(node[row_indices[order], :], dtype=np.float32)
+        block = np.empty_like(sorted_block)
+        block[order] = sorted_block
+        columns = np.asarray([lookup[gene] for gene in genes], dtype=np.int64)
+        truth = block[:, columns]
+    if not np.isfinite(truth).all():
+        raise RuntimeError(f"non-finite {layer_name} values in frozen {condition} matrix")
+    return truth, {
+        "condition": condition,
+        "targets": len(targets),
+        "genes": len(genes),
+        "layer": layer_name,
+        "mean_abs_log_fc": float(np.mean(np.abs(truth))),
+        "nonzero_fraction": float(np.mean(truth != 0)),
+    }
+
+
+def verify_seal(config_path: Path, config: dict[str, Any]) -> dict[str, Any]:
+    manifest_path = root_path(config["outputs"]["pre_numeric_manifest"])
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("status") != "FROZEN_BEFORE_V36_NUMERIC_TARGET_ACCESS":
+        raise RuntimeError("V36 numeric-access seal missing")
+    checks = {
+        "config_sha256": digest(config_path),
+        "partition_sha256": digest(root_path(config["frozen_inputs"]["shared_partition"])),
+        "eligible_targets_sha256": digest(root_path(config["frozen_inputs"]["eligible_targets"])),
+        "target_sha256": digest(root_path(config["target"]["path"])),
+    }
+    for key, observed in checks.items():
+        if manifest.get(key) != observed:
+            raise RuntimeError(f"sealed {key} mismatch")
+    runner_hash = digest(Path(__file__).resolve())
+    if manifest.get("runner_sha256") != runner_hash:
+        amendment = json.loads(COMPATIBILITY_AMENDMENT.read_text(encoding="utf-8"))
+        if amendment.get("status") != "V36_SOURCE_ONLY_TARGET_PROGRAM_COMPATIBILITY_FROZEN_BEFORE_NUMERIC_OUTCOME_ACCESS":
+            raise RuntimeError("V36 compatibility amendment missing")
+        if amendment.get("old_runner_sha256") != manifest.get("runner_sha256"):
+            raise RuntimeError("V36 compatibility amendment does not bind the sealed runner")
+        if amendment.get("new_runner_sha256") != runner_hash:
+            raise RuntimeError("V36 runner changed after compatibility amendment")
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config_path = args.config.resolve()
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    manifest = verify_seal(config_path, config)
+
+    partition = pd.read_csv(root_path(config["frozen_inputs"]["shared_partition"])).sort_values("target").reset_index(drop=True)
+    partition["target"] = partition["target"].astype(str).str.upper()
+    targets = partition["target"].tolist()
+    anchors = partition["role"].eq(config["partition"]["anchor_role"]).to_numpy()
+    heldout = partition["role"].eq(config["partition"]["heldout_role"]).to_numpy()
+    if int(anchors.sum()) != int(config["partition"]["expected_anchor_targets"]):
+        raise RuntimeError("anchor count changed")
+    if int(heldout.sum()) != int(config["partition"]["expected_heldout_targets"]):
+        raise RuntimeError("heldout count changed")
+
+    target_path = root_path(config["target"]["path"])
+    with h5py.File(target_path, "r") as handle:
+        var = handle["var"]
+        measured = META.read_frame_column(var, "gene_name") if "gene_name" in var else META.read_index(var)
+    target_genes = {str(value).strip().upper() for value in measured if str(value).strip()}
+    source_data = ad.read_h5ad(root_path(config["source"]["h5ad"]))
+    source_lookup = V28.gene_lookup(source_data)
+    genes = sorted(set(source_lookup) & target_genes)
+    if len(genes) != int(config["target"]["expected_common_genes"]):
+        raise RuntimeError(f"expected {config['target']['expected_common_genes']} common genes, found {len(genes)}")
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = V28.aggregate_source(
+        source_data, source_columns, int(config["source"]["minimum_cells_per_construct"])
+    )
+    del source_data
+    source_map = {str(target).upper(): i for i, target in enumerate(source_targets)}
+    if set(targets) - set(source_map):
+        raise RuntimeError("frozen targets disappeared from source")
+    source = np.stack([source_means[source_map[target]] for target in targets]).astype(np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in targets], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in targets], dtype=int)
+    source_rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1.0e-12))
+
+    model = config["model"]
+    components = min(32, len(targets) - 1, len(genes) - 1)
+    embedding = TruncatedSVD(n_components=components, random_state=int(model["program_seed"])).fit_transform(source.T)
+    labels = KMeans(n_clusters=int(model["program_count"]), random_state=int(model["program_seed"]), n_init=20).fit_predict(embedding)
+    target_programs, fallback_targets = assign_target_programs(targets, genes, labels, source)
+    task_x = V28.task_features(source, cells, constructs)
+    signatures = V35.scope_indices(source, int(model["top_signature_genes"]))
+    scopes = {"top100": V35.scope_indices(source, 100), "top200": signatures, "top500": V35.scope_indices(source, 500), "all": V35.scope_indices(source, None)}
+    families = list(map(str, model["families"]))
+    anchor_indices = np.flatnonzero(anchors)
+    folds = V30.stratified_round_robin_folds(source_rms[anchor_indices], int(model["anchor_oof_folds"]), int(model["anchor_oof_seed"]))
+
+    anchor_rows: list[dict[str, Any]] = []
+    heldout_rows: list[dict[str, Any]] = []
+    bootstrap_rows: list[dict[str, Any]] = []
+    summaries: dict[str, Any] = {}
+    comparisons: dict[str, float] = {}
+    for offset, condition in enumerate(config["target"]["conditions"]):
+        truth, data_report = target_log_fc(target_path, genes, targets, str(condition), str(config["target"]["effect_layer"]))
+        anchor_loss = np.full((len(anchor_indices), len(families)), np.nan)
+        positions = {int(index): pos for pos, index in enumerate(anchor_indices)}
+        for fold in range(int(model["anchor_oof_folds"])):
+            test_indices = anchor_indices[folds == fold]
+            local_test = np.zeros(len(targets), dtype=bool)
+            local_test[test_indices] = True
+            local_train = anchors & ~local_test
+            predictions = V33.family_predictions(source, truth, local_train, local_test, source_rms, labels, target_programs, task_x, signatures, model, fold)
+            for local_pos, target_index in enumerate(test_indices):
+                selected = signatures[target_index]
+                row: dict[str, Any] = {"condition": condition, "target": targets[target_index], "fold": int(fold)}
+                for family_index, family in enumerate(families):
+                    loss = V28.mse(predictions[family][local_pos], truth[target_index], selected)
+                    anchor_loss[positions[int(target_index)], family_index] = loss
+                    row[f"{family}_mse_top200"] = loss
+                anchor_rows.append(row)
+        decision = choose_probability_selector(anchor_loss, families, int(config["selector"]["anchor_bootstrap_repetitions"]), int(config["selector"]["anchor_bootstrap_seed"]) + offset, float(config["selector"]["dominant_probability_threshold"]))
+        predictions = V33.family_predictions(source, truth, anchors, heldout, source_rms, labels, target_programs, task_x, signatures, model, 999 + offset)
+        selector_prediction = weighted_prediction(predictions, families, np.asarray(decision["weight_vector"]))
+        heldout_indices = np.flatnonzero(heldout)
+        truth_test = truth[heldout]
+        local_scopes = {name: [values[index] for index in heldout_indices] for name, values in scopes.items()}
+        loss_by_scope: dict[str, dict[str, np.ndarray]] = {}
+        for scope, indices in local_scopes.items():
+            loss_by_scope[scope] = {family: V35.per_target_mse(predictions[family], truth_test, indices) for family in families}
+            loss_by_scope[scope]["selector"] = V35.per_target_mse(selector_prediction, truth_test, indices)
+        primary_matrix = np.column_stack([loss_by_scope["top200"][family] for family in families])
+        selector_loss = loss_by_scope["top200"]["selector"]
+        regret_values, regret, regret_ci = V35.bootstrap_regret(selector_loss, primary_matrix, int(config["evaluation"]["bootstrap_repetitions"]), int(config["evaluation"]["bootstrap_seed"]) + offset)
+        for repeat, value in enumerate(regret_values):
+            bootstrap_rows.append({"condition": condition, "bootstrap": repeat, "regret": value})
+        for local_index, target_index in enumerate(heldout_indices):
+            row = {"condition": condition, "target": targets[target_index]}
+            for scope, losses in loss_by_scope.items():
+                for family, values in losses.items():
+                    row[f"{family}_mse_{scope}"] = float(values[local_index])
+            heldout_rows.append(row)
+        scalar_test = V35.paired_inference(selector_loss, loss_by_scope["top200"]["scalar"], int(config["evaluation"]["bootstrap_repetitions"]), int(config["evaluation"]["bootstrap_seed"]) + 100 + offset, int(config["evaluation"]["sign_flip_repetitions"]), int(config["evaluation"]["sign_flip_seed"]) + offset)
+        residual_test = V35.paired_inference(loss_by_scope["top200"]["residual_program"], loss_by_scope["top200"]["low_rank"], int(config["evaluation"]["bootstrap_repetitions"]), int(config["evaluation"]["bootstrap_seed"]) + 200 + offset, int(config["evaluation"]["sign_flip_repetitions"]), int(config["evaluation"]["sign_flip_seed"]) + 100 + offset)
+        comparisons[f"{condition}:selector_vs_scalar"] = scalar_test["sign_flip_one_sided_p"]
+        comparisons[f"{condition}:residual_vs_low_rank"] = residual_test["sign_flip_one_sided_p"]
+        means = {family: float(loss_by_scope["top200"][family].mean()) for family in families}
+        summaries[str(condition)] = {
+            "data": data_report,
+            "selector": {key: value for key, value in decision.items() if key != "weight_vector"},
+            "heldout": {
+                "targets": int(heldout.sum()),
+                "selector_mean_mse_top200": float(selector_loss.mean()),
+                "fixed_family_mean_mse_top200": means,
+                "oracle_fixed_family": min(means, key=means.get),
+                "selector_regret": regret,
+                "selector_regret_bootstrap_ci95": regret_ci,
+                "primary_gate_upper_ci_at_most_0_02": bool(regret_ci[1] <= float(config["evaluation"]["maximum_regret_ci_upper"])),
+                "selector_vs_scalar": scalar_test,
+                "residual_program_vs_low_rank": residual_test,
+                "scope_relative_improvement_vs_scalar": {scope: float(1.0 - losses["selector"].mean() / losses["scalar"].mean()) for scope, losses in loss_by_scope.items()},
+            },
+        }
+        del truth, predictions, selector_prediction
+
+    adjusted = V35.holm_adjust(comparisons)
+    for key, value in adjusted.items():
+        condition, comparison = key.split(":")
+        field = "selector_vs_scalar" if comparison == "selector_vs_scalar" else "residual_program_vs_low_rank"
+        summaries[condition]["heldout"][field]["holm_adjusted_p"] = float(value)
+    primary_pass = all(summaries[str(condition)]["heldout"]["primary_gate_upper_ci_at_most_0_02"] for condition in config["evaluation"]["required_conditions"])
+    status = "V36_PROSPECTIVE_SELECTOR_CONFIRMED_ALL_THREE_CONTEXTS" if primary_pass else "V36_PROSPECTIVE_SELECTOR_NOT_CONFIRMED_ALL_THREE_CONTEXTS"
+    summary = {
+        "status": status,
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "pre_numeric_manifest_sha256": digest(root_path(config["outputs"]["pre_numeric_manifest"])),
+        "common_genes": len(genes),
+        "anchor_targets": int(anchors.sum()),
+        "heldout_targets": int(heldout.sum()),
+        "target_program_assignment": {
+            "direct_gene_membership": len(targets) - len(fallback_targets),
+            "source_effect_energy_fallback": len(fallback_targets),
+            "fallback_targets": fallback_targets,
+            "rule": "missing target genes use the program with maximum mean squared source-effect energy",
+        },
+        "conditions": summaries,
+        "primary_joint_gate": {"rule": config["evaluation"]["primary_success_rule"], "passed": primary_pass},
+        "claim_boundary": config["claim_boundary"],
+    }
+    paths = {key: root_path(value) for key, value in config["outputs"].items()}
+    for key in ("anchor_oof_metrics", "heldout_metrics", "bootstrap_regret", "summary_json", "summary_markdown", "output_audit"):
+        paths[key].parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(anchor_rows).to_csv(paths["anchor_oof_metrics"], index=False)
+    pd.DataFrame(heldout_rows).to_csv(paths["heldout_metrics"], index=False)
+    pd.DataFrame(bootstrap_rows).to_csv(paths["bootstrap_regret"], index=False)
+    paths["summary_json"].write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    lines = ["# V36 原代 CD4 T 细胞三状态前瞻确认", "", f"- 状态：**{status}**", f"- 联合门槛：**{'通过' if primary_pass else '未通过'}**（三种状态 regret 95% CI 上界均 ≤2%）。", ""]
+    for condition, value in summaries.items():
+        held = value["heldout"]
+        selector = value["selector"]
+        weights = ", ".join(f"{name}={weight:.3f}" for name, weight in selector["weights"].items())
+        lines += [f"## {condition}", "", f"- anchor 决策：{selector['mode']}；权重：{weights}", f"- anchor 赢家：{selector['anchor_winner']}；稳定率：{100*selector['leading_probability']:.2f}%", f"- held-out 最佳固定家族：{held['oracle_fixed_family']}", f"- selector regret：{100*held['selector_regret']:.3f}%（95% CI {100*held['selector_regret_bootstrap_ci95'][0]:.3f}% 至 {100*held['selector_regret_bootstrap_ci95'][1]:.3f}%）", f"- selector 相对 scalar：{100*held['selector_vs_scalar']['relative_improvement']:.3f}%", f"- residual 相对 low-rank：{100*held['residual_program_vs_low_rank']['relative_improvement']:.3f}%", ""]
+    lines.append("三种状态和四位供者来自同一项研究，因此联合门槛检验跨状态稳定性，不等于三项独立外部复制。")
+    paths["summary_markdown"].write_text("\n".join(lines) + "\n", encoding="utf-8")
+    output_files = [paths["anchor_oof_metrics"], paths["heldout_metrics"], paths["bootstrap_regret"], paths["summary_json"], paths["summary_markdown"]]
+    audit = {
+        "status": "V36_OUTPUT_AUDIT_PASS",
+        "summary_status": status,
+        "row_counts": {"anchor_oof": len(anchor_rows), "heldout": len(heldout_rows), "bootstrap_regret": len(bootstrap_rows)},
+        "expected_row_counts": {"anchor_oof": 3 * int(anchors.sum()), "heldout": 3 * int(heldout.sum()), "bootstrap_regret": 3 * int(config["evaluation"]["bootstrap_repetitions"])},
+        "files": {str(path.relative_to(ROOT)).replace("\\", "/"): digest(path) for path in output_files},
+    }
+    if audit["row_counts"] != audit["expected_row_counts"]:
+        raise RuntimeError("V36 output row count audit failed")
+    paths["output_audit"].write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

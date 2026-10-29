@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""Retrospective V33 demonstration of an anchor-only calibration-family selector."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import anndata as ad
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "configs/v33_anchor_family_selector_exploratory.yaml"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+V28 = load_module("v28_v33", ROOT / "scripts/run_v28_adamson_cross_study.py")
+V30 = load_module("v30_v33", ROOT / "scripts/run_v30_large_scale_residual_program.py")
+V31 = load_module("v31_v33", ROOT / "scripts/run_v31_feng_external_validation.py")
+
+
+def root_path(value: str) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def select_family(scores: pd.DataFrame, families: list[str]) -> tuple[str, list[dict[str, float]]]:
+    ranking = sorted(
+        [
+            {"family": family, "mean_mse": float(scores[f"{family}_mse"].mean())}
+            for family in families
+        ],
+        key=lambda row: row["mean_mse"],
+    )
+    return str(ranking[0]["family"]), ranking
+
+
+def family_predictions(
+    source: np.ndarray,
+    truth: np.ndarray,
+    local_train: np.ndarray,
+    local_test: np.ndarray,
+    source_rms: np.ndarray,
+    labels: np.ndarray,
+    target_programs: np.ndarray,
+    task_x: np.ndarray,
+    signatures: list[np.ndarray],
+    model: dict[str, Any],
+    fold: int,
+) -> dict[str, np.ndarray]:
+    low_rank = V28.low_rank_prediction(
+        source,
+        truth,
+        local_train,
+        local_test,
+        int(model["low_rank_components"]),
+        float(model["low_rank_ridge_alpha"]),
+        int(model["inner_fold_seed"]) + fold,
+    )
+    gene_ridge = V28.gene_wise_prediction(
+        source, truth, local_train, local_test, float(model["low_rank_ridge_alpha"])
+    )
+    lower, upper = map(float, model["direct_program_alpha_bounds"])
+    oracles, curvature = V28.scalar_oracles(source, truth, signatures, lower, upper)
+    scalar = np.clip(
+        V28.fit_weighted_ridge(
+            task_x,
+            oracles,
+            curvature,
+            local_train,
+            local_test,
+            float(model["scalar_ridge_alpha"]),
+        ),
+        lower,
+        upper,
+    )
+    direct_config = {
+        "program_count": int(model["program_count"]),
+        "alpha_bounds": model["direct_program_alpha_bounds"],
+        "program_ridge_alpha": float(model["program_ridge_alpha"]),
+        "centering_strength": float(model["direct_program_centering_strength"]),
+        "delta_scale": 1.0,
+    }
+    direct_alpha = V28.fit_program_alphas(
+        source,
+        truth,
+        local_train,
+        local_test,
+        labels,
+        target_programs,
+        task_x,
+        scalar,
+        direct_config,
+    )
+    inner_prediction = V30.inner_oof_low_rank(
+        source, truth, local_train, source_rms, model, outer_fold=100 + fold
+    )
+    residual_truth = truth - inner_prediction
+    residual_beta = V30.fit_program_coefficients(
+        source,
+        residual_truth,
+        local_train,
+        local_test,
+        labels,
+        target_programs,
+        task_x,
+        int(model["program_count"]),
+        float(model["program_ridge_alpha"]),
+        tuple(map(float, model["residual_program_beta_bounds"])),
+        float(model["residual_centering_strength"]),
+    )
+    test_indices = np.flatnonzero(local_test)
+    return {
+        "low_rank": low_rank,
+        "gene_ridge": gene_ridge,
+        "scalar": scalar[:, None] * source[test_indices],
+        "direct_program": direct_alpha[:, labels] * source[test_indices],
+        "residual_program": low_rank + residual_beta[:, labels] * source[test_indices],
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    parent_path = root_path(config["parent_config"])
+    parent = yaml.safe_load(parent_path.read_text(encoding="utf-8"))
+    model = parent["model"]
+    selector = config["selector"]
+    families = list(map(str, selector["families"]))
+
+    partition = pd.read_csv(root_path(parent["inputs"]["blind_partition"]))
+    partition["target"] = partition["target"].astype(str).str.upper()
+    targets = sorted(partition["target"].tolist())
+    role_by_target = partition.set_index("target")["role"].to_dict()
+    anchor_role = parent["partition"]["anchor_role"]
+    anchors = np.asarray([role_by_target[target] == anchor_role for target in targets])
+    heldout = ~anchors
+    if int(anchors.sum()) != int(parent["partition"]["expected_anchor_targets"]):
+        raise RuntimeError("unexpected V33 anchor count")
+
+    lfc = V31.load_lfc_matrix(root_path(parent["inputs"]["target_lfc"]), targets)
+    source_data = ad.read_h5ad(root_path(parent["inputs"]["source_h5ad"]))
+    source_lookup = V28.gene_lookup(source_data)
+    genes = sorted(set(source_lookup) & set(lfc.columns.astype(str)))
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = V28.aggregate_source(
+        source_data,
+        source_columns,
+        int(parent["source_preprocessing"]["minimum_cells_per_construct"]),
+    )
+    source_map = {target: index for index, target in enumerate(source_targets)}
+    source = np.stack([source_means[source_map[target]] for target in targets]).astype(np.float32)
+    truth = lfc.loc[targets, genes].to_numpy(dtype=np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in targets], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in targets], dtype=int)
+    source_rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1.0e-12))
+
+    components = min(32, len(targets) - 1, len(genes) - 1)
+    embedding = TruncatedSVD(
+        n_components=components, random_state=int(model["program_seed"])
+    ).fit_transform(source.T)
+    labels = KMeans(
+        n_clusters=int(model["program_count"]),
+        random_state=int(model["program_seed"]),
+        n_init=20,
+    ).fit_predict(embedding)
+    gene_to_index = {gene: index for index, gene in enumerate(genes)}
+    target_programs = np.asarray([labels[gene_to_index[target]] for target in targets], dtype=int)
+    task_x = V28.task_features(source, cells, constructs)
+    signatures = [
+        np.argsort(np.abs(source[index]))[-int(model["top_signature_genes"]) :]
+        for index in range(len(targets))
+    ]
+
+    anchor_indices = np.flatnonzero(anchors)
+    local_folds = V30.stratified_round_robin_folds(
+        source_rms[anchor_indices],
+        int(selector["anchor_oof_folds"]),
+        int(selector["fold_seed"]),
+    )
+    fold_by_index = {int(index): int(fold) for index, fold in zip(anchor_indices, local_folds)}
+    rows: list[dict[str, Any]] = []
+    for fold in range(int(selector["anchor_oof_folds"])):
+        fold_test_indices = anchor_indices[local_folds == fold]
+        local_test = np.zeros(len(targets), dtype=bool)
+        local_test[fold_test_indices] = True
+        local_train = anchors & ~local_test
+        predictions = family_predictions(
+            source,
+            truth,
+            local_train,
+            local_test,
+            source_rms,
+            labels,
+            target_programs,
+            task_x,
+            signatures,
+            model,
+            fold,
+        )
+        for local_position, target_index in enumerate(fold_test_indices):
+            selected = signatures[target_index]
+            row: dict[str, Any] = {
+                "target": targets[target_index],
+                "fold": fold_by_index[int(target_index)],
+            }
+            for family in families:
+                row[f"{family}_mse"] = V28.mse(
+                    predictions[family][local_position], truth[target_index], selected
+                )
+            rows.append(row)
+    anchor_scores = pd.DataFrame(rows).sort_values("target").reset_index(drop=True)
+    selected_family, ranking = select_family(anchor_scores, families)
+
+    rng = np.random.default_rng(int(selector["bootstrap_seed"]))
+    bootstrap_rows = []
+    for repetition in range(int(selector["bootstrap_repetitions"])):
+        chosen = rng.integers(0, len(anchor_scores), size=len(anchor_scores))
+        sample = anchor_scores.iloc[chosen]
+        family, _ = select_family(sample, families)
+        bootstrap_rows.append({"bootstrap": repetition, "selected_family": family})
+    bootstrap_selection = pd.DataFrame(bootstrap_rows)
+    selection_frequency = (
+        bootstrap_selection["selected_family"].value_counts(normalize=True).reindex(families, fill_value=0)
+    )
+
+    heldout_metrics = pd.read_csv(root_path(config["inputs"]["v31_record_metrics"]))
+    v31_summary = json.loads(root_path(config["inputs"]["v31_summary"]).read_text(encoding="utf-8"))
+    if len(heldout_metrics) != int(v31_summary["heldout_targets"]):
+        raise RuntimeError("V33 held-out metric count differs from V31")
+    scope = str(selector["metric_scope"])
+    selected_loss = heldout_metrics[f"{selected_family}_mse_{scope}"].to_numpy(float)
+    heldout_ranking = sorted(
+        [
+            {
+                "family": family,
+                "mean_mse": float(heldout_metrics[f"{family}_mse_{scope}"].mean()),
+            }
+            for family in families
+        ],
+        key=lambda row: row["mean_mse"],
+    )
+    comparisons = []
+    for offset, family in enumerate(families):
+        if family == selected_family:
+            continue
+        reference = heldout_metrics[f"{family}_mse_{scope}"].to_numpy(float)
+        result, _, _ = V30.infer_pair(
+            selected_loss,
+            reference,
+            family,
+            int(selector["inference_bootstrap_repetitions"]),
+            int(selector["inference_seed"]) + offset,
+            int(selector["inference_sign_flip_repetitions"]),
+            int(selector["inference_seed"]) + 100 + offset,
+        )
+        comparisons.append(result)
+
+    best_anchor = ranking[0]
+    second_anchor = ranking[1]
+    test_best = heldout_ranking[0]["family"]
+    summary = {
+        "stage": config["stage"],
+        "analysis_status": config["analysis_status"],
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "anchor_targets": int(anchors.sum()),
+        "heldout_targets": int(heldout.sum()),
+        "selector": {
+            "selected_family": selected_family,
+            "anchor_oof_ranking": ranking,
+            "relative_margin_over_second": float(
+                1.0 - float(best_anchor["mean_mse"]) / float(second_anchor["mean_mse"])
+            ),
+            "bootstrap_selection_frequency": {
+                family: float(selection_frequency.loc[family]) for family in families
+            },
+        },
+        "retrospective_heldout_demonstration": {
+            "test_ranking": heldout_ranking,
+            "test_best_family": test_best,
+            "selector_matches_test_best": bool(selected_family == test_best),
+            "comparisons": comparisons,
+        },
+        "claim_boundary": {
+            "selector_uses_anchor_targets_only": True,
+            "heldout_target_values_not_used_by_selector_algorithm": True,
+            "analysis_was_conceived_after_v31_heldout_results_were_seen": True,
+            "heldout_demonstration_is_retrospective_not_confirmatory": True,
+            "future_screen_must_freeze_selector_before_outcome_access": True,
+        },
+    }
+
+    output_paths = {key: root_path(value) for key, value in config["outputs"].items()}
+    for path in output_paths.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    anchor_scores.to_csv(output_paths["anchor_oof_metrics"], index=False)
+    bootstrap_selection.to_csv(output_paths["bootstrap_selection"], index=False)
+    output_paths["summary_json"].write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    selected_comparisons = {row["comparator"]: row for row in comparisons}
+    lines = [
+        "# V33 少量锚点选择校准家族（探索性）",
+        "",
+        f"- 状态：**{config['analysis_status']}**",
+        f"- 仅用 {int(anchors.sum())} 个 anchor 的四折 OOF 选择：**{selected_family}**",
+        f"- anchor OOF 对第二名相对优势：{100*summary['selector']['relative_margin_over_second']:.3f}%",
+        f"- bootstrap 中选择该家族的频率：{100*selection_frequency.loc[selected_family]:.1f}%",
+        f"- 68 个 held-out test 上的实际最佳家族：**{test_best}**",
+        f"- 选择器是否命中测试赢家：**{summary['retrospective_heldout_demonstration']['selector_matches_test_best']}**",
+        "",
+    ]
+    for family, result in selected_comparisons.items():
+        lines.append(
+            f"- selected vs {family}: {100*result['relative_improvement']:.3f}% "
+            f"(95% CI {100*result['bootstrap_ci95'][0]:.3f}% to {100*result['bootstrap_ci95'][1]:.3f}%)"
+        )
+    lines.extend(
+        [
+            "",
+            "本分析在 V31 结果之后提出。算法本身不读取 held-out target 值，但分析者已经见过总体结果，因此只能证明实现可行，不能算新的盲确认。",
+        ]
+    )
+    output_paths["summary_md"].write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,117 @@
+{
+  "generated_at_utc": "2026-10-28T16:01:47.995018+00:00",
+  "raw_files_are_not_distributed_in_git": true,
+  "files": [
+    {
+      "path": "data/raw/feng_metadata/TargetedScreen_Cell-Metadata.tsv.gz",
+      "original_path": "data/raw/phase_b2_candidate_metadata/feng2026/TargetedScreen_Cell-Metadata.tsv.gz",
+      "size_bytes": 13491635,
+      "checksums": {
+        "sha256": "d6057946570edbbcd3406f4e55d8f338f602ef1b7cc71cffca101133e35b098d"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "source_article": "https://doi.org/10.6084/m9.figshare.26819743.v1",
+      "download_note": "Retrieve the exact author metadata artifact by filename; direct endpoint not independently resolved during this reorganization."
+    },
+    {
+      "path": "data/raw/replogle_k562/K562_essential_normalized_bulk_01.h5ad",
+      "original_path": "data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad",
+      "size_bytes": 79766954,
+      "checksums": {
+        "sha256": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://ndownloader.figshare.com/files/35780870"
+    },
+    {
+      "path": "data/raw/replogle_k562/K562_gwps_normalized_bulk_01.h5ad",
+      "original_path": "data/raw/v26_k562_gwps/K562_gwps_normalized_bulk_01.h5ad",
+      "size_bytes": 374587922,
+      "checksums": {
+        "sha256": "37e48c474d8b5dead4151f96ea8f5fe7bbe6beb10eeea48685b740c3f74490a2"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://ndownloader.figshare.com/files/35773217"
+    },
+    {
+      "path": "data/raw/adamson_k562/AdamsonWeissman2016_GSM2406681_10X010.h5ad",
+      "original_path": "data/raw/v28_adamson_k562/AdamsonWeissman2016_GSM2406681_10X010.h5ad",
+      "size_bytes": 471286951,
+      "checksums": {
+        "sha256": "e70fcd49808cab8d724de8d5a332940911206e1c8ef44cc7b568d048ed795c85"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://zenodo.org/api/records/13350497/files/AdamsonWeissman2016_GSM2406681_10X010.h5ad/content"
+    },
+    {
+      "path": "data/raw/feng_ipsc/TargetedScreen_LFC_byGene.tsv.gz",
+      "original_path": "data/raw/v31_feng/TargetedScreen_LFC_byGene.tsv.gz",
+      "size_bytes": 77563731,
+      "checksums": {
+        "sha256": "4e963e6806995b448854636b131072ee23abd4af127068d03fb4ea07240dede0"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://huggingface.co/datasets/Boom5426/iPSC-CRISPRi-PerturbSeq/resolve/main/feng2026_ipsc_crispri_map/lfc/TargetedScreen_LFC_byGene.tsv.gz?download=true"
+    },
+    {
+      "path": "data/raw/nadig_cell_lines/nadig25hepg2_processed_complete.h5ad",
+      "original_path": "data/raw/v35_nadig/nadig25hepg2_processed_complete.h5ad",
+      "size_bytes": 1236448196,
+      "checksums": {
+        "sha256": "b25cd23e74b94c0fec44a00b8bdfd21673ad391068df56da9cf81f38bc692221"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://storage.googleapis.com/scperteval/processed/nadig25hepg2_processed_complete.h5ad"
+    },
+    {
+      "path": "data/raw/nadig_cell_lines/nadig25jurkat_processed_complete.h5ad",
+      "original_path": "data/raw/v35_nadig/nadig25jurkat_processed_complete.h5ad",
+      "size_bytes": 2004474709,
+      "checksums": {
+        "sha256": "eaad2b2c58ed76d4d3e14c08f0d1602cff3e28445833d4885dd38029ac956ee8"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://storage.googleapis.com/scperteval/processed/nadig25jurkat_processed_complete.h5ad"
+    },
+    {
+      "path": "data/raw/primary_cd4t/DE_stats.suppl_table.csv",
+      "original_path": "data/raw/v36_cd4t/DE_stats.suppl_table.csv",
+      "size_bytes": 7276533,
+      "checksums": {
+        "sha256": "7011918976889aaa5d802e3fff35635d6e4b6757bb1af17306059c0be07fbdc0"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://genome-scale-tcell-perturb-seq.s3.amazonaws.com/marson2025_data/suppl_tables/DE_stats.suppl_table.csv"
+    },
+    {
+      "path": "data/raw/primary_cd4t/GWCD4i.DE_stats.h5ad",
+      "original_path": "data/raw/v36_cd4t/GWCD4i.DE_stats.h5ad",
+      "size_bytes": 16786240107,
+      "checksums": {
+        "sha256": "c355f535ff32cf7ba1edc49cf9c6039fe84f2c9ebe4d005515cba75790cfbb62"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://genome-scale-tcell-perturb-seq.s3.amazonaws.com/marson2025_data/GWCD4i.DE_stats.h5ad"
+    },
+    {
+      "path": "data/raw/primary_cd4t_replicates/GWCD4i.DE_stats.by_donors.h5mu",
+      "original_path": "data/raw/v37_cd4t_replicates/GWCD4i.DE_stats.by_donors.h5mu",
+      "size_bytes": 16866278447,
+      "checksums": {
+        "sha256": "2ee3cf90925600eb044619021da2bdd47d661f306a204586652256facf17af64"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://genome-scale-tcell-perturb-seq.s3.amazonaws.com/marson2025_data/GWCD4i.DE_stats.by_donors.h5mu"
+    },
+    {
+      "path": "data/raw/primary_cd4t_replicates/GWCD4i.DE_stats.by_guide.h5mu",
+      "original_path": "data/raw/v37_cd4t_replicates/GWCD4i.DE_stats.by_guide.h5mu",
+      "size_bytes": 29424424894,
+      "checksums": {
+        "sha256": "964eeafb3356a7322a1d5b1121802c6a1433456f3591e2d5797817df3bf9c2f6"
+      },
+      "checksum_origin": "historical_frozen_record_or_new_computation",
+      "download_url": "https://genome-scale-tcell-perturb-seq.s3.amazonaws.com/marson2025_data/GWCD4i.DE_stats.by_guide.h5mu"
+    }
+  ]
+}

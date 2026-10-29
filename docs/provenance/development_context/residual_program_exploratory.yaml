@@ -1,0 +1,62 @@
+protocol:
+  name: perturbcompass-v29-low-rank-plus-program-residual
+  version: 1
+  created_on: "2026-10-27"
+  status: exploratory_after_v28_outcome_access
+  primary_source: essential
+  sensitivity_source: gwps
+
+parent:
+  v28_config: configs/v28_adamson_cross_study_frozen.yaml
+  v28_summary: docs/audit/v28_adamson_cross_study_summary.json
+  rationale: low_rank_beats_program_while_real_programs_beat_random_programs
+
+model:
+  outer_target_folds: 5
+  inner_target_folds: 4
+  target_fold_seed: 262226
+  inner_fold_seed: 292901
+  program_count: 16
+  program_seed: 252516
+  low_rank_components: 16
+  low_rank_ridge_alpha: 10.0
+  scalar_ridge_alpha: 100.0
+  program_ridge_alpha: 10.0
+  direct_program_alpha_bounds: [0.0, 1.5]
+  residual_program_beta_bounds: [-0.75, 0.75]
+  residual_centering_strength: 1.0
+  top_signature_genes: 200
+  random_program_partitions: 50
+  random_program_seed: 292902
+
+evaluation:
+  primary: target_equal_macro_mse_on_source_top200_genes
+  comparators: [low_rank, gene_ridge, direct_program, scalar]
+  bootstrap_repetitions: 10000
+  bootstrap_seed: 292903
+  sign_flip_repetitions: 50000
+  sign_flip_seed: 292904
+  multiple_testing: holm_within_source
+  secondary_gene_sets: [top100, top500, all]
+
+exploratory_promotion_gate:
+  residual_below_low_rank: true
+  residual_vs_low_rank_bootstrap_ci_low_above: 0.0
+  residual_vs_low_rank_holm_p_at_most: 0.05
+  targets_improved_fraction_at_least: 0.5
+  random_program_exact_p_at_most: 0.05
+  sensitivity_source_direction_positive: true
+
+outputs:
+  record_metrics: data/derived/v29_residual_program/v29_record_metrics.csv
+  random_program_metrics: data/derived/v29_residual_program/v29_random_program_metrics.csv
+  bootstrap_metrics: data/derived/v29_residual_program/v29_bootstrap_metrics.csv
+  sign_flip_metrics: data/derived/v29_residual_program/v29_sign_flip_metrics.csv
+  summary_json: docs/audit/v29_residual_program_summary.json
+  summary_markdown: docs/audit/v29_residual_program_summary.md
+
+claim_boundary:
+  exploratory_not_confirmatory: true
+  low_rank_component_is_an_operational_nuisance_mapping_not_proven_measurement_quality: true
+  program_residual_is_an_operational_structured_residual_not_proven_pure_biology: true
+  independent_confirmation_required_before_method_claim: true

@@ -1,0 +1,69 @@
+protocol:
+  name: perturbcompass-v38-source-defined-functional-ood-sensitivity
+  version: 1
+  frozen_on: "2026-10-28"
+  stage: pre_target_numeric_design
+  analysis_type: prespecified_external_OOD_sensitivity_not_new_independent_study
+  motivation: EL_PERTURB_2026_shows_random_few_shot_splits_can_mask_OOD_failure
+
+parent:
+  v36_predownload_config: configs/v36_cd4t_predownload.yaml
+  adopt_v36_final_eligibility_partition_genes_models_and_hyperparameters_unchanged: true
+  use_v36_test_targets_only_for_evaluation: true
+  no_target_outcome_used_to_define_OOD_clusters: true
+
+ood_definition:
+  features: K562_source_effect_profiles_on_v36_common_genes
+  feature_preprocessing: TruncatedSVD_32_components_then_row_standardization
+  clustering: KMeans
+  cluster_count: 8
+  svd_seed: 380001
+  kmeans_seed: 380002
+  kmeans_n_init: 50
+  shared_clusters_across_target_conditions: true
+  each_fold_test: V36_heldout_targets_in_one_source_defined_cluster
+  each_fold_anchor_training: V36_anchor_targets_outside_that_cluster
+  same_cluster_anchor_outcomes_excluded_from_both_selector_OOF_and_final_fit: true
+  minimum_training_anchors_per_fold: 160
+  minimum_test_targets_per_cluster: 40
+  fail_closed_if_minimum_not_met: true
+
+selector:
+  families: [direct_program, scalar, residual_program, low_rank, gene_ridge]
+  anchor_oof_folds: 5
+  anchor_bootstrap_repetitions: 20000
+  dominant_probability_threshold: 0.80
+  dominant_action: choose_anchor_oof_mean_loss_winner
+  ambiguous_action: bootstrap_best_probability_weighted_average_of_all_families
+  forced_baseline_inclusion: false
+  selector_is_refit_within_each_OOD_fold_and_condition: true
+
+evaluation:
+  primary_metric: target_equal_macro_MSE_on_source_top200
+  combine_predictions_from_eight_disjoint_source_clusters: true
+  primary_regret_oracle: recompute_best_fixed_family_inside_each_cluster_stratified_target_bootstrap
+  bootstrap_repetitions: 20000
+  bootstrap_seed: 380003
+  stress_test_support_rule: all_three_conditions_regret_upper_95pct_CI_at_most_0.05
+  secondary_residual_rule: residual_program_beats_low_rank_point_estimate_in_at_least_six_of_eight_clusters_per_condition
+  inferential_unit: heldout_target_with_cluster_stratification
+  cluster_count_too_small_for_independent_cluster_level_generalization_claim: true
+
+outputs:
+  design_freeze: docs/audit/v38_source_ood_design_freeze.json
+  source_cluster_partition: data/derived/v38_source_ood/v38_source_cluster_partition.csv
+  pre_numeric_manifest: docs/audit/v38_source_ood_pre_numeric_manifest.json
+  summary_json: docs/audit/v38_source_ood_summary.json
+  summary_markdown: docs/audit/v38_source_ood_summary.md
+
+claim_boundary:
+  sensitivity_within_same_external_CD4T_study: true
+  source_defined_clusters_do_not_use_target_outcomes: true
+  not_equivalent_to_EL_PERTURB_target_response_cluster_split: true
+  positive_result_supports_source_geometry_extrapolation_not_universal_biological_OOD: true
+  negative_result_must_be_reported_and_limits_v36_random_split_claim: true
+
+references:
+  - Tiwari et al. bioRxiv 2026. doi:10.64898/2026.10.16.759604
+  - Huang et al. bioRxiv 2026. doi:10.64898/2026.09.30.755756
+  - Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065

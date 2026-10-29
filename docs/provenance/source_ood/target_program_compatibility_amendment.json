@@ -1,0 +1,14 @@
+{
+  "status": "V38_TARGET_PROGRAM_COMPATIBILITY_FROZEN_BEFORE_V38_NUMERIC_ACCESS",
+  "frozen_at_utc": "2026-10-28T06:55:29.225336+00:00",
+  "v38_target_outcomes_read": false,
+  "generated_after_v36_results": true,
+  "reason": "52 eligible CD4 targets are not measured genes; direct target-to-gene lookup would crash before analysis",
+  "change": "measured targets keep their gene program; unmeasured targets use the program with highest mean squared source-effect energy",
+  "uses_target_outcomes": false,
+  "effect_estimands_selector_thresholds_and_success_rules_changed": false,
+  "old_runner_sha256": "c0bc050dfe267e450994e2156988122515aa483668469f328b00e75adf16551e",
+  "new_runner_sha256": "37d15d3f5ed0bd3f1dc0fc218a46940b03c7077de52448fe1ea0a69a11949a94",
+  "new_tests_sha256": "f63010b999b7e537e619ca451e0f3a93012392931bdc0e9fac087c13d44226e0",
+  "classification": "pre_v38_numeric_source_only_compatibility_amendment"
+}

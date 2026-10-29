@@ -1,0 +1,21 @@
+{
+  "status": "V35_OUTPUT_AUDIT_PASS",
+  "summary_status": "V35_PROSPECTIVE_SELECTOR_NOT_CONFIRMED_BOTH_SCREENS",
+  "row_counts": {
+    "anchor_oof": 512,
+    "heldout": 2008,
+    "bootstrap_regret": 40000
+  },
+  "expected_row_counts": {
+    "anchor_oof": 512,
+    "heldout": 2008,
+    "bootstrap_regret": 40000
+  },
+  "files": {
+    "data/derived/v35_nadig/v35_anchor_oof_metrics.csv": "a5598acbcf1f970dea2001dc69aab3e2c356a538571bfa766fecf54f96f8bdff",
+    "data/derived/v35_nadig/v35_heldout_metrics.csv": "be431aa181843ffd95041ba5cb23ed230625f50318c7e33b19562afaf48ae0a0",
+    "data/derived/v35_nadig/v35_bootstrap_regret.csv": "a1f6f3d63bd0c1834960bc80e20f22b769f5fc161f842b30522b308710c3b447",
+    "docs/audit/v35_nadig_prospective_summary.json": "d9dc932d9031be076aeb3401374b2d47e4356f1f989806b13d1c7fce769c7a19",
+    "docs/audit/v35_nadig_prospective_summary.md": "4899e51cc143cc89210836816d4ff8763f3f34ed41c8d6a58068961576ca46d0"
+  }
+}

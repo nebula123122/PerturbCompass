@@ -1,0 +1,436 @@
+#!/usr/bin/env python3
+"""Run frozen V31 external validation on the Feng targeted CRISPRi screen."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import anndata as ad
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "configs/v31_feng_external_validation_frozen.yaml"
+SPEC = importlib.util.spec_from_file_location(
+    "v30", ROOT / "scripts/run_v30_large_scale_residual_program.py"
+)
+V30 = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+SPEC.loader.exec_module(V30)
+V28 = V30.V28
+
+
+def root_path(value: str) -> Path:
+    return (ROOT / value).resolve()
+
+
+def digest(path: Path, algorithm: str = "sha256") -> str:
+    value = hashlib.new(algorithm)
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(16 * 1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def load_lfc_matrix(path: Path, targets: list[str], chunk_size: int = 500_000) -> pd.DataFrame:
+    """Load only frozen targets from the authors' target-by-gene LFC table."""
+    target_set = set(targets)
+    pieces: list[pd.DataFrame] = []
+    required = ["Target", "Expressed_Gene_Symbol", "lfc"]
+    for chunk in pd.read_csv(
+        path,
+        sep="\t",
+        compression="gzip",
+        usecols=required,
+        dtype={"Target": str, "Expressed_Gene_Symbol": str, "lfc": np.float64},
+        chunksize=chunk_size,
+    ):
+        chunk["Target"] = chunk["Target"].str.upper()
+        selected = chunk.loc[chunk["Target"].isin(target_set)].copy()
+        if selected.empty:
+            continue
+        selected["Expressed_Gene_Symbol"] = selected["Expressed_Gene_Symbol"].str.upper()
+        pieces.append(selected)
+    if not pieces:
+        raise RuntimeError("none of the frozen V31 targets were found in the LFC table")
+    frame = pd.concat(pieces, ignore_index=True)
+    if not np.isfinite(frame["lfc"].to_numpy(float)).all():
+        raise RuntimeError("non-finite LFC value in frozen target rows")
+    if frame[["Target", "Expressed_Gene_Symbol"]].duplicated().any():
+        duplicate = frame.loc[
+            frame[["Target", "Expressed_Gene_Symbol"]].duplicated(keep=False),
+            ["Target", "Expressed_Gene_Symbol"],
+        ].head()
+        raise RuntimeError(f"duplicate target-gene rows: {duplicate.to_dict('records')}")
+    observed_targets = set(frame["Target"])
+    missing_targets = sorted(target_set - observed_targets)
+    if missing_targets:
+        raise RuntimeError(f"missing frozen targets in LFC table: {missing_targets}")
+    matrix = frame.pivot(index="Target", columns="Expressed_Gene_Symbol", values="lfc")
+    matrix = matrix.reindex(targets)
+    if matrix.isna().any().any():
+        missing = int(matrix.isna().sum().sum())
+        raise RuntimeError(f"target-gene LFC matrix has {missing} missing values")
+    return matrix
+
+
+def verify_freeze(config_path: Path, config: dict[str, Any]) -> dict[str, Any]:
+    pre = json.loads(root_path(config["outputs"]["pre_download_freeze"]).read_text(encoding="utf-8"))
+    manifest = json.loads(root_path(config["outputs"]["pre_run_manifest"]).read_text(encoding="utf-8"))
+    if pre["status"] != "FROZEN_BEFORE_V31_TARGET_OUTCOME_DOWNLOAD":
+        raise RuntimeError("V31 pre-download status mismatch")
+    if manifest["status"] != "FROZEN_BEFORE_V31_NUMERIC_TARGET_ACCESS":
+        raise RuntimeError("V31 pre-run status mismatch")
+    if manifest["config_sha256"] != digest(config_path):
+        raise RuntimeError("V31 config changed after freeze")
+    if manifest["runner_sha256"] != digest(Path(__file__).resolve()):
+        raise RuntimeError("V31 runner changed after freeze")
+    target = root_path(config["inputs"]["target_lfc"])
+    if manifest["target_sha256"] != digest(target):
+        raise RuntimeError("V31 target LFC changed after sealing")
+    if pre["source_sha256"] != digest(root_path(config["inputs"]["source_h5ad"])):
+        raise RuntimeError("V31 source changed after freeze")
+    for key, hash_key in [
+        ("blind_partition", "blind_partition_sha256"),
+        ("eligible_tasks", "eligible_tasks_sha256"),
+        ("feng_metadata", "feng_metadata_sha256"),
+    ]:
+        if digest(root_path(config["inputs"][key])) != config["inputs"][hash_key]:
+            raise RuntimeError(f"V31 {key} changed after freeze")
+    return manifest
+
+
+def status_from_gates(replication: dict[str, bool], publication: dict[str, bool]) -> str:
+    if all(replication.values()) and all(publication.values()):
+        return "V31_EXTERNAL_REPLICATION_AND_GENE_RIDGE_NONINFERIOR"
+    if all(replication.values()):
+        return "V31_EXTERNAL_LOW_RANK_REPLICATION_ONLY"
+    return "V31_EXTERNAL_REPLICATION_NOT_CONFIRMED"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config_path = args.config.resolve()
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    manifest = verify_freeze(config_path, config)
+    model = config["model"]
+
+    partition = pd.read_csv(root_path(config["inputs"]["blind_partition"]))
+    partition["target"] = partition["target"].astype(str).str.upper()
+    expected_roles = {
+        config["partition"]["anchor_role"]: int(config["partition"]["expected_anchor_targets"]),
+        config["partition"]["heldout_role"]: int(config["partition"]["expected_heldout_targets"]),
+    }
+    if partition["role"].value_counts().to_dict() != expected_roles:
+        raise RuntimeError(f"unexpected V31 partition roles: {partition['role'].value_counts().to_dict()}")
+    if partition["target"].duplicated().any():
+        raise RuntimeError("duplicate target in V31 partition")
+    targets = sorted(partition["target"].tolist())
+    role_by_target = partition.set_index("target")["role"].to_dict()
+
+    lfc = load_lfc_matrix(root_path(config["inputs"]["target_lfc"]), targets)
+    source_data = ad.read_h5ad(root_path(config["inputs"]["source_h5ad"]))
+    source_lookup = V28.gene_lookup(source_data)
+    genes = sorted(set(source_lookup) & set(lfc.columns.astype(str)))
+    if len(genes) < int(config["target_table_contract"]["minimum_common_genes"]):
+        raise RuntimeError(f"only {len(genes)} common genes")
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = V28.aggregate_source(
+        source_data,
+        source_columns,
+        int(config["source_preprocessing"]["minimum_cells_per_construct"]),
+    )
+    source_map = {target: index for index, target in enumerate(source_targets)}
+    missing_source = sorted(set(targets) - set(source_map))
+    if missing_source:
+        raise RuntimeError(f"V31 source lacks partition targets: {missing_source}")
+    source = np.stack([source_means[source_map[target]] for target in targets]).astype(np.float32)
+    truth = lfc.loc[targets, genes].to_numpy(dtype=np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in targets], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in targets], dtype=int)
+    train = np.asarray([role_by_target[target] == config["partition"]["anchor_role"] for target in targets])
+    test = ~train
+
+    source_rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1.0e-12))
+    components = min(32, len(targets) - 1, len(genes) - 1)
+    embedding = TruncatedSVD(
+        n_components=components, random_state=int(model["program_seed"])
+    ).fit_transform(source.T)
+    labels = KMeans(
+        n_clusters=int(model["program_count"]),
+        random_state=int(model["program_seed"]),
+        n_init=20,
+    ).fit_predict(embedding)
+    gene_to_index = {gene: index for index, gene in enumerate(genes)}
+    target_programs = np.asarray([labels[gene_to_index[target]] for target in targets], dtype=int)
+    task_x = V28.task_features(source, cells, constructs)
+    signatures = [
+        np.argsort(np.abs(source[index]))[-int(model["top_signature_genes"]) :]
+        for index in range(len(targets))
+    ]
+
+    low_rank = V28.low_rank_prediction(
+        source,
+        truth,
+        train,
+        test,
+        int(model["low_rank_components"]),
+        float(model["low_rank_ridge_alpha"]),
+        int(model["inner_fold_seed"]),
+    )
+    inner_prediction = V30.inner_oof_low_rank(
+        source, truth, train, source_rms, model, outer_fold=0
+    )
+    residual_truth = truth - inner_prediction
+    residual_beta = V30.fit_program_coefficients(
+        source,
+        residual_truth,
+        train,
+        test,
+        labels,
+        target_programs,
+        task_x,
+        int(model["program_count"]),
+        float(model["program_ridge_alpha"]),
+        tuple(map(float, model["residual_program_beta_bounds"])),
+        float(model["residual_centering_strength"]),
+    )
+    lower, upper = map(float, model["direct_program_alpha_bounds"])
+    oracles, curvature = V28.scalar_oracles(source, truth, signatures, lower, upper)
+    scalar = np.clip(
+        V28.fit_weighted_ridge(
+            task_x, oracles, curvature, train, test, float(model["scalar_ridge_alpha"])
+        ),
+        lower,
+        upper,
+    )
+    direct_config = {
+        "program_count": int(model["program_count"]),
+        "alpha_bounds": model["direct_program_alpha_bounds"],
+        "program_ridge_alpha": float(model["program_ridge_alpha"]),
+        "centering_strength": float(model["direct_program_centering_strength"]),
+        "delta_scale": 1.0,
+    }
+    direct_alpha = V28.fit_program_alphas(
+        source, truth, train, test, labels, target_programs, task_x, scalar, direct_config
+    )
+    gene_ridge = V28.gene_wise_prediction(
+        source, truth, train, test, float(model["low_rank_ridge_alpha"])
+    )
+
+    random_rng = np.random.default_rng(int(model["random_program_seed"]))
+    random_labels = [
+        random_rng.permutation(labels) for _ in range(int(model["random_program_partitions"]))
+    ]
+    random_betas = []
+    for partition_labels in random_labels:
+        random_target_programs = np.asarray(
+            [partition_labels[gene_to_index[target]] for target in targets], dtype=int
+        )
+        random_betas.append(
+            V30.fit_program_coefficients(
+                source,
+                residual_truth,
+                train,
+                test,
+                partition_labels,
+                random_target_programs,
+                task_x,
+                int(model["program_count"]),
+                float(model["program_ridge_alpha"]),
+                tuple(map(float, model["residual_program_beta_bounds"])),
+                float(model["residual_centering_strength"]),
+            )
+        )
+
+    rows: list[dict[str, Any]] = []
+    random_losses: dict[int, list[float]] = {index: [] for index in range(len(random_labels))}
+    test_indices = np.flatnonzero(test)
+    for local_index, target_index in enumerate(test_indices):
+        source_row = source[target_index]
+        target_truth = truth[target_index]
+        predictions = {
+            "low_rank": low_rank[local_index],
+            "gene_ridge": gene_ridge[local_index],
+            "direct_program": direct_alpha[local_index][labels] * source_row,
+            "scalar": scalar[local_index] * source_row,
+            "residual_program": low_rank[local_index] + residual_beta[local_index][labels] * source_row,
+        }
+        ranked = np.argsort(np.abs(source_row))
+        selections = {
+            "top100": ranked[-min(100, len(ranked)) :],
+            "top200": signatures[target_index],
+            "top500": ranked[-min(500, len(ranked)) :],
+            "all": np.arange(len(genes)),
+        }
+        row: dict[str, Any] = {
+            "target": targets[target_index],
+            "role": "test",
+            "coverage_stratum": int(
+                partition.set_index("target").loc[targets[target_index], "coverage_stratum"]
+            ),
+            "source_cells": cells[target_index],
+            "source_constructs": constructs[target_index],
+            "source_effect_rms": source_rms[target_index],
+            "residual_beta_mean": float(residual_beta[local_index].mean()),
+            "residual_beta_sd": float(residual_beta[local_index].std()),
+        }
+        for gene_set, selected in selections.items():
+            for method, prediction in predictions.items():
+                row[f"{method}_mse_{gene_set}"] = V28.mse(prediction, target_truth, selected)
+        rows.append(row)
+        selected = selections["top200"]
+        for random_index, beta in enumerate(random_betas):
+            prediction = (
+                low_rank[local_index]
+                + beta[local_index][random_labels[random_index]] * source_row
+            )
+            random_losses[random_index].append(V28.mse(prediction, target_truth, selected))
+
+    records = pd.DataFrame(rows).sort_values("target").reset_index(drop=True)
+    random_records = pd.DataFrame(
+        [
+            {"partition": index, "mean_mse_top200": float(np.mean(losses))}
+            for index, losses in random_losses.items()
+        ]
+    )
+    candidate = records["residual_program_mse_top200"].to_numpy(float)
+    comparisons, bootstrap_rows, sign_rows = [], [], []
+    comparators = ["low_rank", *config["evaluation"]["secondary_comparators"]]
+    for index, comparator in enumerate(comparators):
+        result, boot, signs = V30.infer_pair(
+            candidate,
+            records[f"{comparator}_mse_top200"].to_numpy(float),
+            comparator,
+            int(config["evaluation"]["bootstrap_repetitions"]),
+            int(config["evaluation"]["bootstrap_seed"]) + index,
+            int(config["evaluation"]["sign_flip_repetitions"]),
+            int(config["evaluation"]["sign_flip_seed"]) + index,
+        )
+        comparisons.append(result)
+        bootstrap_rows.extend(boot)
+        sign_rows.extend(signs)
+    secondary_adjusted = V28.holm_adjust(
+        [row["sign_flip_one_sided_p"] for row in comparisons if row["comparator"] != "low_rank"]
+    )
+    position = 0
+    for row in comparisons:
+        if row["comparator"] == "low_rank":
+            row["multiplicity_adjustment"] = "single_predeclared_primary_none"
+            row["adjusted_p"] = row["sign_flip_one_sided_p"]
+        else:
+            row["multiplicity_adjustment"] = "holm_across_secondary_comparators"
+            row["adjusted_p"] = secondary_adjusted[position]
+            position += 1
+    comparison_map = {row["comparator"]: row for row in comparisons}
+    primary = comparison_map["low_rank"]
+    gene_ridge_result = comparison_map["gene_ridge"]
+    secondary_gene_sets = {
+        gene_set: float(
+            1.0
+            - records[f"residual_program_mse_{gene_set}"].mean()
+            / records[f"low_rank_mse_{gene_set}"].mean()
+        )
+        for gene_set in ["top100", "top500", "all"]
+    }
+    random_p = float(
+        (1 + np.count_nonzero(random_records["mean_mse_top200"] <= candidate.mean()))
+        / (1 + len(random_records))
+    )
+    gate = config["replication_gate"]
+    replication_gates = {
+        "minimum_improvement": primary["relative_improvement"] >= float(gate["minimum_relative_improvement_over_low_rank"]),
+        "bootstrap_ci": primary["bootstrap_ci95"][0] > float(gate["bootstrap_ci95_low_above"]),
+        "sign_flip": primary["sign_flip_one_sided_p"] <= float(gate["sign_flip_one_sided_p_at_most"]),
+        "target_fraction": primary["targets_improved_fraction"] >= float(gate["targets_improved_fraction_at_least"]),
+        "secondary_gene_sets": all(value > 0.0 for value in secondary_gene_sets.values()),
+        "random_program": random_p <= float(gate["random_program_exact_p_at_most"]),
+    }
+    publication_gate = config["publication_strength_gate"]
+    publication_gates = {
+        "replication": all(replication_gates.values()),
+        "gene_ridge_point_noninferiority": gene_ridge_result["relative_improvement"] >= float(publication_gate["gene_ridge_point_noninferiority_relative_margin"]),
+        "gene_ridge_ci_noninferiority": gene_ridge_result["bootstrap_ci95"][0] > float(publication_gate["gene_ridge_bootstrap_ci95_low_above"]),
+    }
+    status = status_from_gates(replication_gates, publication_gates)
+
+    output_paths = {
+        key: root_path(config["outputs"][key])
+        for key in ["record_metrics", "random_program_metrics", "bootstrap_metrics", "sign_flip_metrics"]
+    }
+    for path in output_paths.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    records.to_csv(output_paths["record_metrics"], index=False)
+    random_records.to_csv(output_paths["random_program_metrics"], index=False)
+    pd.DataFrame(bootstrap_rows).to_csv(output_paths["bootstrap_metrics"], index=False)
+    pd.DataFrame(sign_rows).to_csv(output_paths["sign_flip_metrics"], index=False)
+    rankings = sorted(
+        [
+            {"method": method, "mean_mse_top200": float(records[f"{method}_mse_top200"].mean())}
+            for method in ["residual_program", "low_rank", "gene_ridge", "direct_program", "scalar"]
+        ],
+        key=lambda row: row["mean_mse_top200"],
+    )
+    summary = {
+        "stage": "V31 frozen Feng external validation",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "status": status,
+        "source_shape": list(map(int, source_data.shape)),
+        "anchor_targets": int(train.sum()),
+        "heldout_targets": int(test.sum()),
+        "common_measured_genes": len(genes),
+        "target_file_md5": manifest["target_md5"],
+        "primary_comparison": primary,
+        "comparisons": comparisons,
+        "secondary_gene_set_improvements_over_low_rank": secondary_gene_sets,
+        "random_program_exact_p": random_p,
+        "random_program_mean_mse_quantiles": np.quantile(
+            random_records["mean_mse_top200"], [0.025, 0.5, 0.975]
+        ).tolist(),
+        "rankings": rankings,
+        "replication_gates": {key: bool(value) for key, value in replication_gates.items()},
+        "publication_strength_gates": {key: bool(value) for key, value in publication_gates.items()},
+        "claim_boundary": config["claim_boundary"],
+        "output_hashes": {key: digest(path) for key, path in output_paths.items()},
+    }
+    summary_path = root_path(config["outputs"]["summary_json"])
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    root_path(config["outputs"]["summary_markdown"]).write_text(
+        "\n".join(
+            [
+                "# V31 Feng external validation",
+                "",
+                f"- Status: **{status}**",
+                f"- Anchor / held-out targets: {int(train.sum())} / {int(test.sum())}",
+                f"- Common genes: {len(genes)}",
+                f"- Residual program vs low-rank: {100 * primary['relative_improvement']:.3f}%",
+                f"- Bootstrap 95% CI: [{100 * primary['bootstrap_ci95'][0]:.3f}%, {100 * primary['bootstrap_ci95'][1]:.3f}%]",
+                f"- One-sided target sign-flip p: {primary['sign_flip_one_sided_p']:.6g}",
+                f"- Targets improved: {100 * primary['targets_improved_fraction']:.2f}%",
+                f"- Residual program vs gene-wise Ridge: {100 * gene_ridge_result['relative_improvement']:.3f}%",
+                f"- Random-program exact p: {random_p:.6f}",
+                "",
+                "One external screen is one screen-level replication; held-out targets quantify within-screen stability.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

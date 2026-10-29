@@ -1,0 +1,27 @@
+{
+  "status": "V36_BLINDED_SAMPLE_SIZE_ADAPTATION_FROZEN_BEFORE_NUMERIC_ACCESS",
+  "generated_at_utc": "2026-10-28T04:16:44.383164+00:00",
+  "target_outcome_layers_read": false,
+  "numeric_v36_outputs_absent_at_freeze": true,
+  "strict_predownload_feasibility_gate": {
+    "original_minimum_shared_eligible_targets": 1100,
+    "observed_shared_eligible_targets": 741,
+    "passed": false
+  },
+  "classification": "blinded_metadata_adaptive_rescue_not_untouched_preregistered_confirmation",
+  "revised_minimum_shared_eligible_targets": 700,
+  "anchor_targets_unchanged": 256,
+  "anticipated_heldout_targets": 485,
+  "minimum_heldout_targets_under_revised_gate": 444,
+  "model_selector_hyperparameters_and_success_thresholds_changed": false,
+  "partition_seed_changed": false,
+  "rationale": "The outcome-blind eligible count supports the unchanged 256-anchor design with 485 held-out targets; only the inaccurate pre-download availability gate is adapted.",
+  "required_reporting": [
+    "report the original 1100-target feasibility failure",
+    "label all downstream V36 results as blinded metadata-adaptive",
+    "do not call the analysis an untouched preregistered confirmation"
+  ],
+  "old_inspector_sha256": "3a3d635af2844a984cc9a7f443480899556808ff23494a40a398dd71ae03c9f5",
+  "new_inspector_sha256": "52d0a7d3bf94ee40919b9cbd26ce503be4fabc74b2b4194a213d849ec7e39e58",
+  "missingness_amendment_sha256": "cacede2993170557a5986186f20c69bfe963e94a56128abfd51aa65eca6f0066"
+}

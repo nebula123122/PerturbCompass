@@ -1,0 +1,41 @@
+{
+  "status": "V38_SOURCE_OOD_IMPLEMENTATION_SEALED_BEFORE_RUN",
+  "frozen_at_utc": "2026-10-28T06:56:26.949854+00:00",
+  "design_was_frozen_before_v36_numeric_access": true,
+  "config_sha256": "2b1e2bba0fbf252c4ec7ab3a1b8b4c2ccad7809ead1fb7027cba5f7d6add36ef",
+  "v36_config_sha256": "e09fbd05221e577a98d532b19c24717faf89e6bd91ffddad92e42437be2629a2",
+  "cluster_manifest_sha256": "8625c408174b18638b602eb1fade1b1bc7c0deaec58953d1952a9d5928331049",
+  "cluster_partition_sha256": "707e9c49594443c92dd8a1a33b97a081e585726b2c3cedafabea0c194ce173b2",
+  "compatibility_amendment_sha256": "bcb4be7fddea3c42e2142f8f4e4e7981ea07356793db383b13f23756b742fae2",
+  "cluster_feasibility_adaptation_sha256": "f18c1dc4f18ffe851a70b708ab3bb22cb511131b837a5598364adb8201e7682b",
+  "runner_sha256": "37d15d3f5ed0bd3f1dc0fc218a46940b03c7077de52448fe1ea0a69a11949a94",
+  "tests_sha256": "f63010b999b7e537e619ca451e0f3a93012392931bdc0e9fac087c13d44226e0",
+  "target_sha256": "c355f535ff32cf7ba1edc49cf9c6039fe84f2c9ebe4d005515cba75790cfbb62",
+  "locked_selector": {
+    "families": [
+      "direct_program",
+      "scalar",
+      "residual_program",
+      "low_rank",
+      "gene_ridge"
+    ],
+    "anchor_oof_folds": 5,
+    "anchor_bootstrap_repetitions": 20000,
+    "dominant_probability_threshold": 0.8,
+    "dominant_action": "choose_anchor_oof_mean_loss_winner",
+    "ambiguous_action": "bootstrap_best_probability_weighted_average_of_all_families",
+    "forced_baseline_inclusion": false,
+    "selector_is_refit_within_each_OOD_fold_and_condition": true
+  },
+  "locked_evaluation": {
+    "primary_metric": "target_equal_macro_MSE_on_source_top200",
+    "combine_predictions_from_eight_disjoint_source_clusters": true,
+    "primary_regret_oracle": "recompute_best_fixed_family_inside_each_cluster_stratified_target_bootstrap",
+    "bootstrap_repetitions": 20000,
+    "bootstrap_seed": 380003,
+    "stress_test_support_rule": "all_three_conditions_regret_upper_95pct_CI_at_most_0.05",
+    "secondary_residual_rule": "residual_program_beats_low_rank_point_estimate_in_at_least_six_of_eight_clusters_per_condition",
+    "inferential_unit": "heldout_target_with_cluster_stratification",
+    "cluster_count_too_small_for_independent_cluster_level_generalization_claim": true
+  }
+}

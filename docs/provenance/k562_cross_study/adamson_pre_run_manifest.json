@@ -1,0 +1,20 @@
+{
+  "status": "FROZEN_BEFORE_V28_TARGET_EXPRESSION_ACCESS",
+  "frozen_at_utc": "2026-10-27T04:07:19.567535+00:00",
+  "config_sha256": "d3dbc610b14749c6e66eb503ffb754572b9e4169dbfc3e7413fa18cc548c6ac3",
+  "runner_sha256": "5d6e773d4f86a120c903ddc3b276e82acdc80064442206f50861e3134234a66f",
+  "feasibility_sha256": "c22088229864cecf546afa13bb4ea7ebfb318d7244dd859730c1076186748cfd",
+  "target_sha256": "e70fcd49808cab8d724de8d5a332940911206e1c8ef44cc7b568d048ed795c85",
+  "target_md5": "2fa44ea61a8dd35742af618638ec65fc",
+  "source_sha256": {
+    "essential": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829",
+    "gwps": "37e48c474d8b5dead4151f96ea8f5fe7bbe6beb10eeea48685b740c3f74490a2"
+  },
+  "source_md5": {
+    "essential": "30496767641cd2e660ee6ecb5baee132",
+    "gwps": "a3dfaa94ea8724217f5ecb1e14a5f0c8"
+  },
+  "primary_source": "essential",
+  "sensitivity_source": "gwps",
+  "outcome_blinding_note": "Only H5AD metadata and file hashes were accessed before this freeze; target X was not read."
+}

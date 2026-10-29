@@ -1,0 +1,167 @@
+{
+  "stage": "V32 exploratory robustness and heterogeneity analysis of V31",
+  "analysis_status": "post_v31_exploratory",
+  "generated_at_utc": "2026-10-27T10:14:43.496353+00:00",
+  "heldout_targets": 68,
+  "primary_robustness": {
+    "comparison": "residual_program_vs_low_rank",
+    "relative_improvement": 0.09155657363952041,
+    "trimmed_relative_improvement": 0.10240328968274315,
+    "trim_fraction_each_tail": 0.1,
+    "wins": 57,
+    "losses_or_ties": 11,
+    "exact_one_sided_sign_p": 6.3750161872252586e-09,
+    "leave_one_out_relative_improvement_range": [
+      0.08461254865402912,
+      0.09984133833393405
+    ],
+    "all_leave_one_out_positive": true,
+    "largest_influence_removals": [
+      {
+        "removed": 1,
+        "remaining": 67,
+        "relative_improvement": 0.08461254865402912,
+        "fraction_improved": 0.835820895522388
+      },
+      {
+        "removed": 3,
+        "remaining": 65,
+        "relative_improvement": 0.07326714046754346,
+        "fraction_improved": 0.8307692307692308
+      },
+      {
+        "removed": 5,
+        "remaining": 63,
+        "relative_improvement": 0.06786706587029212,
+        "fraction_improved": 0.8253968253968254
+      }
+    ]
+  },
+  "direct_program_external_ranking": {
+    "mean_mse_top200": 0.0020492499932271103,
+    "comparisons": [
+      {
+        "comparator": "residual_program",
+        "relative_improvement": 0.17217371496223388,
+        "fraction_improved": 0.6470588235294118
+      },
+      {
+        "comparator": "low_rank",
+        "relative_improvement": 0.24796665318902467,
+        "fraction_improved": 0.7941176470588235
+      },
+      {
+        "comparator": "gene_ridge",
+        "relative_improvement": 0.25046055732747086,
+        "fraction_improved": 0.7794117647058824
+      },
+      {
+        "comparator": "scalar",
+        "relative_improvement": 0.0954670585913101,
+        "fraction_improved": 0.8235294117647058
+      }
+    ],
+    "interpretation": "post_v31_exploratory_model_family_signal_not_confirmatory"
+  },
+  "heterogeneity": {
+    "subgroups": [
+      {
+        "subgroup": "coverage_stratum",
+        "level": "1",
+        "n": 17,
+        "relative_improvement": 0.09335570197122611,
+        "fraction_improved": 0.8235294117647058,
+        "mean_absolute_loss_reduction": 0.00028487110226015295
+      },
+      {
+        "subgroup": "coverage_stratum",
+        "level": "2",
+        "n": 17,
+        "relative_improvement": 0.11976480028421876,
+        "fraction_improved": 0.9411764705882353,
+        "mean_absolute_loss_reduction": 0.0003344022616028823
+      },
+      {
+        "subgroup": "coverage_stratum",
+        "level": "3",
+        "n": 17,
+        "relative_improvement": 0.0789253228180824,
+        "fraction_improved": 0.8235294117647058,
+        "mean_absolute_loss_reduction": 0.00025758381016490584
+      },
+      {
+        "subgroup": "coverage_stratum",
+        "level": "4",
+        "n": 17,
+        "relative_improvement": 0.06755248616396625,
+        "fraction_improved": 0.7647058823529411,
+        "mean_absolute_loss_reduction": 0.00012108957238325882
+      },
+      {
+        "subgroup": "source_effect_rms_quartile",
+        "level": "1",
+        "n": 17,
+        "relative_improvement": 0.08798571934092536,
+        "fraction_improved": 0.8823529411764706,
+        "mean_absolute_loss_reduction": 0.00012080309523581174
+      },
+      {
+        "subgroup": "source_effect_rms_quartile",
+        "level": "2",
+        "n": 17,
+        "relative_improvement": 0.10758079631659878,
+        "fraction_improved": 0.9411764705882353,
+        "mean_absolute_loss_reduction": 0.0002319816755175117
+      },
+      {
+        "subgroup": "source_effect_rms_quartile",
+        "level": "3",
+        "n": 17,
+        "relative_improvement": 0.12001782518368476,
+        "fraction_improved": 0.8823529411764706,
+        "mean_absolute_loss_reduction": 0.00032167479316398223
+      },
+      {
+        "subgroup": "source_effect_rms_quartile",
+        "level": "4",
+        "n": 17,
+        "relative_improvement": 0.06897052170356921,
+        "fraction_improved": 0.6470588235294118,
+        "mean_absolute_loss_reduction": 0.00032348718249389414
+      }
+    ],
+    "correlations": [
+      {
+        "feature": "source_cells",
+        "spearman_rho": 0.03840537543712751,
+        "permutation_two_sided_p": 0.753304933901322,
+        "repetitions": 50000
+      },
+      {
+        "feature": "source_effect_rms",
+        "spearman_rho": 0.13665686910714966,
+        "permutation_two_sided_p": 0.2661546769064619,
+        "repetitions": 50000
+      },
+      {
+        "feature": "residual_beta_mean",
+        "spearman_rho": -0.3057220292399893,
+        "permutation_two_sided_p": 0.010279794404111918,
+        "repetitions": 50000
+      },
+      {
+        "feature": "residual_beta_sd",
+        "spearman_rho": 0.46734358896056793,
+        "permutation_two_sided_p": 0.00011999760004799904,
+        "repetitions": 50000
+      }
+    ],
+    "multiplicity_note": "exploratory_unadjusted_descriptive"
+  },
+  "claim_boundary": {
+    "post_outcome_exploratory": true,
+    "does_not_upgrade_number_of_independent_external_screens": true,
+    "subgroup_and_correlation_results_require_future_confirmation": true,
+    "robustness_diagnostics_do_not_replace_v31_prespecified_inference": true
+  }
+}

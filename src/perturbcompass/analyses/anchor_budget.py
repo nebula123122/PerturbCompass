@@ -1,0 +1,168 @@
+from __future__ import annotations
+from perturbcompass import families as family_models
+import hashlib
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+import anndata as ad
+import h5py
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+from perturbcompass.runtime import ROOT, root_path, digest, verify_migrated_inputs
+from perturbcompass import transfer, programs, families, evaluation, apma, metadata
+CONFIG = ROOT / 'configs/anchor_budget.yaml'
+CONFIRMATION_CONFIG = ROOT / 'configs/cd4t_confirmation.yaml'
+BUGFIX_AMENDMENT = ROOT / 'docs/provenance/anchor_budget/fold_order_seed_bugfix_amendment.json'
+
+def verify_seal(design):
+    verify_migrated_inputs(__file__, CONFIG, design)
+    return json.loads(root_path(design['outputs']['pre_numeric_manifest']).read_text(encoding='utf-8'))
+
+def relative_increase_bootstrap(candidate: np.ndarray, reference: np.ndarray, repetitions: int, seed: int) -> tuple[float, list[float]]:
+    actual = float(candidate.mean() / reference.mean() - 1.0)
+    rng = np.random.default_rng(seed)
+    values = np.empty(repetitions, dtype=float)
+    for start in range(0, repetitions, 1000):
+        stop = min(start + 1000, repetitions)
+        rows = rng.integers(0, len(candidate), size=(stop - start, len(candidate)))
+        values[start:stop] = candidate[rows].mean(axis=1) / reference[rows].mean(axis=1) - 1.0
+    interval = np.quantile(values, [0.025, 0.975])
+    return (actual, [float(interval[0]), float(interval[1])])
+
+def canonical_anchor_indices(chosen: list[str], target_to_index: dict[str, int]) -> np.ndarray:
+    """Return partition-order indices so subset rank cannot perturb OOF fold construction."""
+    return np.asarray(sorted((target_to_index[target] for target in chosen)), dtype=int)
+
+def main() -> None:
+    design = yaml.safe_load(CONFIG.read_text(encoding='utf-8'))
+    confirmation = yaml.safe_load(CONFIRMATION_CONFIG.read_text(encoding='utf-8'))
+    manifest = verify_seal(design)
+    partition = pd.read_csv(root_path(confirmation['frozen_inputs']['shared_partition'])).sort_values('target').reset_index(drop=True)
+    partition['target'] = partition['target'].astype(str).str.upper()
+    targets = partition['target'].tolist()
+    heldout = partition['role'].eq(confirmation['partition']['heldout_role']).to_numpy()
+    order = pd.read_csv(root_path(design['outputs']['source_anchor_order'])).sort_values('rank')
+    ordered_anchors = order['target'].astype(str).str.upper().tolist()
+    target_to_index = {target: index for index, target in enumerate(targets)}
+    if set(ordered_anchors) - set(target_to_index):
+        raise RuntimeError('ordered anchor disappeared from V36 partition')
+    target_path = root_path(confirmation['target']['path'])
+    with h5py.File(target_path, 'r') as handle:
+        var = handle['var']
+        measured = metadata.read_frame_column(var, 'gene_name') if 'gene_name' in var else metadata.read_index(var)
+    target_genes = {str(value).strip().upper() for value in measured if str(value).strip()}
+    source_data = ad.read_h5ad(root_path(confirmation['source']['h5ad']))
+    source_lookup = transfer.gene_lookup(source_data)
+    genes = sorted(set(source_lookup) & target_genes)
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = transfer.aggregate_source(source_data, source_columns, int(confirmation['source']['minimum_cells_per_construct']))
+    del source_data
+    source_map = {str(target).upper(): index for index, target in enumerate(source_targets)}
+    source = np.stack([source_means[source_map[target]] for target in targets]).astype(np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in targets], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in targets], dtype=int)
+    source_rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1e-12))
+    model = confirmation['model']
+    embedding = TruncatedSVD(n_components=min(32, len(targets) - 1, len(genes) - 1), random_state=int(model['program_seed'])).fit_transform(source.T)
+    gene_programs = KMeans(n_clusters=int(model['program_count']), random_state=int(model['program_seed']), n_init=20).fit_predict(embedding)
+    target_programs, fallback_targets = apma.assign_target_programs(targets, genes, gene_programs, source)
+    task_x = transfer.task_features(source, cells, constructs)
+    signatures = evaluation.scope_indices(source, int(model['top_signature_genes']))
+    families = list(map(str, model['families']))
+    budgets = list(map(int, design['anchor_design']['budgets']))
+    heldout_rows: list[dict[str, Any]] = []
+    summaries: dict[str, Any] = {}
+    selector_losses: dict[tuple[str, int], np.ndarray] = {}
+    for condition_offset, condition in enumerate(confirmation['target']['conditions']):
+        truth, _ = apma.target_log_fc(target_path, genes, targets, str(condition), str(confirmation['target']['effect_layer']))
+        condition_summary: dict[str, Any] = {}
+        for budget in budgets:
+            chosen = ordered_anchors[:budget]
+            anchor_indices = canonical_anchor_indices(chosen, target_to_index)
+            anchors = np.zeros(len(targets), dtype=bool)
+            anchors[anchor_indices] = True
+            folds = programs.stratified_round_robin_folds(source_rms[anchor_indices], int(model['anchor_oof_folds']), int(model['anchor_oof_seed']))
+            anchor_loss = np.full((len(anchor_indices), len(families)), np.nan)
+            positions = {int(index): position for position, index in enumerate(anchor_indices)}
+            for fold in range(int(model['anchor_oof_folds'])):
+                validation_indices = anchor_indices[folds == fold]
+                validation = np.zeros(len(targets), dtype=bool)
+                validation[validation_indices] = True
+                train = anchors & ~validation
+                predictions = family_models.family_predictions(source, truth, train, validation, source_rms, gene_programs, target_programs, task_x, signatures, model, fold)
+                for local_position, target_index in enumerate(validation_indices):
+                    selected = signatures[target_index]
+                    for family_index, family in enumerate(families):
+                        anchor_loss[positions[int(target_index)], family_index] = transfer.mse(predictions[family][local_position], truth[target_index], selected)
+            decision = apma.choose_probability_selector(anchor_loss, families, int(design['selector']['anchor_bootstrap_repetitions']), int(confirmation['selector']['anchor_bootstrap_seed']) + condition_offset, float(design['selector']['dominant_probability_threshold']))
+            predictions = family_models.family_predictions(source, truth, anchors, heldout, source_rms, gene_programs, target_programs, task_x, signatures, model, 999 + condition_offset)
+            selected_prediction = apma.weighted_prediction(predictions, families, np.asarray(decision['weight_vector']))
+            test_indices = np.flatnonzero(heldout)
+            local_signatures = [signatures[index] for index in test_indices]
+            truth_test = truth[heldout]
+            family_loss = {family: evaluation.per_target_mse(predictions[family], truth_test, local_signatures) for family in families}
+            selector_loss = evaluation.per_target_mse(selected_prediction, truth_test, local_signatures)
+            selector_losses[str(condition), budget] = selector_loss
+            family_matrix = np.column_stack([family_loss[family] for family in families])
+            _, regret, regret_interval = evaluation.bootstrap_regret(selector_loss, family_matrix, int(design['evaluation']['bootstrap_repetitions']), int(confirmation['evaluation']['bootstrap_seed']) + condition_offset)
+            condition_summary[str(budget)] = {'anchor_targets': budget, 'selector': {key: value for key, value in decision.items() if key != 'weight_vector'}, 'selector_mean_mse_top200': float(selector_loss.mean()), 'fixed_family_mean_mse_top200': {family: float(family_loss[family].mean()) for family in families}, 'selector_regret': regret, 'selector_regret_bootstrap_ci95': regret_interval, 'primary_regret_gate_upper_ci_at_most_0_05': bool(regret_interval[1] <= float(design['evaluation']['budget_success_threshold_regret_upper_95pct_CI']))}
+            for local_position, target_index in enumerate(test_indices):
+                row = {'condition': condition, 'budget': budget, 'target': targets[target_index], 'selector_mse_top200': float(selector_loss[local_position])}
+                for family in families:
+                    row[f'{family}_mse_top200'] = float(family_loss[family][local_position])
+                heldout_rows.append(row)
+        reference = selector_losses[str(condition), max(budgets)]
+        for budget in budgets:
+            increase, interval = relative_increase_bootstrap(selector_losses[str(condition), budget], reference, int(design['evaluation']['bootstrap_repetitions']), 402000 + 1000 * condition_offset + budget)
+            condition_summary[str(budget)]['relative_mse_increase_vs_256'] = increase
+            condition_summary[str(budget)]['relative_mse_increase_vs_256_bootstrap_ci95'] = interval
+            condition_summary[str(budget)]['secondary_noninferiority_upper_ci_at_most_0_05'] = bool(interval[1] <= float(design['evaluation']['secondary_noninferiority_margin']))
+        summaries[str(condition)] = condition_summary
+        del truth
+    budget_joint: dict[str, Any] = {}
+    for budget in budgets:
+        primary = all((summaries[str(condition)][str(budget)]['primary_regret_gate_upper_ci_at_most_0_05'] for condition in confirmation['target']['conditions']))
+        secondary = all((summaries[str(condition)][str(budget)]['secondary_noninferiority_upper_ci_at_most_0_05'] for condition in confirmation['target']['conditions']))
+        budget_joint[str(budget)] = {'primary_all_conditions': primary, 'secondary_all_conditions': secondary}
+    reliable = [budget for budget in budgets if budget_joint[str(budget)]['primary_all_conditions']]
+    noninferior = [budget for budget in budgets if budget_joint[str(budget)]['secondary_all_conditions']]
+    minimal_reliable = min(reliable) if reliable else None
+    minimal_noninferior = min(noninferior) if noninferior else None
+    heldout_frame = pd.DataFrame(heldout_rows)
+    confirmation_metrics = pd.read_csv(ROOT / 'results/reference/cd4t_confirmation/heldout_metrics.csv')
+    confirmation_metrics['target'] = confirmation_metrics['target'].astype(str).str.upper()
+    full = heldout_frame.loc[heldout_frame['budget'].eq(max(budgets))].sort_values(['condition', 'target']).reset_index(drop=True)
+    expected = confirmation_metrics.sort_values(['condition', 'target']).reset_index(drop=True)
+    if full[['condition', 'target']].to_dict('records') != expected[['condition', 'target']].to_dict('records'):
+        raise RuntimeError('V40 full-budget rows do not align with V36 heldout rows')
+    checked_columns = [f'{family}_mse_top200' for family in families] + ['selector_mse_top200']
+    maximum_difference = 0.0
+    for column in checked_columns:
+        difference = float(np.max(np.abs(full[column].to_numpy(dtype=float) - expected[column].to_numpy(dtype=float))))
+        maximum_difference = max(maximum_difference, difference)
+        if not np.allclose(full[column], expected[column], rtol=1e-07, atol=1e-09):
+            raise RuntimeError(f'V40 256-anchor budget failed to reproduce V36 column {column}: max diff {difference}')
+    payload = {'status': 'V40_ANCHOR_BUDGET_FRONTIER_COMPLETE', 'generated_at_utc': datetime.now(timezone.utc).isoformat(), 'minimal_reliable_budget_by_primary_regret_rule': minimal_reliable, 'minimal_noninferior_budget_vs_256_by_secondary_rule': minimal_noninferior, 'budget_joint_gates': budget_joint, 'v36_full_budget_reproduction_audit': {'passed': True, 'checked_columns': checked_columns, 'maximum_absolute_difference': maximum_difference, 'tolerance': {'rtol': 1e-07, 'atol': 1e-09}}, 'conditions': summaries, 'target_program_assignment': {'fallback_target_count': len(fallback_targets), 'fallback_targets': fallback_targets}, 'pre_numeric_manifest_sha256': digest(root_path(design['outputs']['pre_numeric_manifest'])), 'claim_boundary': design['claim_boundary']}
+    output_dir = ROOT / 'results/reproduced/anchor_budget'
+    output_dir.mkdir(parents=True, exist_ok=True)
+    heldout_frame.to_csv(output_dir / 'heldout_budget_metrics.csv', index=False)
+    summary_path = root_path(design['outputs']['summary_json'])
+    summary_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    lines = ['# V40：source 空间 anchor 数量—性能前沿', '', f"- primary regret 规则下最小可靠预算：**{(minimal_reliable if minimal_reliable is not None else '无')}**。", f"- 相对 256-anchor 的 5% 非劣规则下最小预算：**{(minimal_noninferior if minimal_noninferior is not None else '无')}**。", '- 所有预算使用同一组 V36 held-out 靶点；anchor 顺序只由 source 效应决定。', '']
+    for condition, values in summaries.items():
+        lines += [f'## {condition}', '']
+        for budget in budgets:
+            value = values[str(budget)]
+            rci = value['selector_regret_bootstrap_ci95']
+            ici = value['relative_mse_increase_vs_256_bootstrap_ci95']
+            lines.append(f"- {budget} anchors：regret {100 * value['selector_regret']:.2f}% （95% CI {100 * rci[0]:.2f}%–{100 * rci[1]:.2f}%）；相对 256 增幅 {100 * value['relative_mse_increase_vs_256']:.2f}% （95% CI {100 * ici[0]:.2f}%–{100 * ici[1]:.2f}%）。")
+        lines.append('')
+    lines.append('这是同一外部数据集内的测量效率敏感性分析，不是新增独立外部验证，也不直接等同于湿实验成本。')
+    root_path(design['outputs']['summary_markdown']).write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+if __name__ == '__main__':
+    main()

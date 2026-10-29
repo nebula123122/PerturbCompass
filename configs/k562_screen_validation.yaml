@@ -1,0 +1,100 @@
+protocol:
+  name: perturbcompass-k562-screen-validation
+  version: 1
+  frozen_on: '2026-10-27'
+  status: large_scale_internal_development_validation_after_v29
+  analysis_type: nested_cross_fitted_same_study_independent_screen_validation
+  prediction_task: map_replogle_day6_k562_essential_effects_to_day8_k562_gwps_effects_for_held_out_targets
+parent:
+  v29_config: docs/provenance/development_context/residual_program_exploratory.yaml
+  v29_summary: docs/provenance/development_context/residual_program_summary.json
+  rationale: directionally_positive_low_rank_plus_program_residual_requires_large_target_count
+inputs:
+  source_h5ad: data/raw/replogle_k562/K562_essential_normalized_bulk_01.h5ad
+  source_expected_md5: 30496767641cd2e660ee6ecb5baee132
+  target_h5ad: data/raw/replogle_k562/K562_gwps_normalized_bulk_01.h5ad
+  target_expected_md5: a3dfaa94ea8724217f5ecb1e14a5f0c8
+eligibility:
+  minimum_cells_per_construct: 10
+  aggregate_constructs_by_num_cells_filtered_weighted_mean: true
+  require_finite_full_profile: true
+  common_measured_genes_only: true
+  require_target_gene_measured: true
+  minimum_eligible_targets: 1000
+model:
+  outer_target_folds: 5
+  inner_target_folds: 4
+  target_fold_seed: 303001
+  inner_fold_seed: 303002
+  fold_stratification: source_effect_rms_quintile_round_robin
+  program_count: 16
+  program_seed: 252516
+  low_rank_components: 16
+  low_rank_ridge_alpha: 10.0
+  scalar_ridge_alpha: 100.0
+  program_ridge_alpha: 10.0
+  direct_program_alpha_bounds:
+  - 0.0
+  - 1.5
+  direct_program_centering_strength: 0.5
+  residual_program_beta_bounds:
+  - -0.75
+  - 0.75
+  residual_centering_strength: 1.0
+  top_signature_genes: 200
+  random_program_partitions: 20
+  random_program_seed: 303003
+  preprocessing_fit_within_training_fold: true
+  source_only_program_learning_may_use_all_eligible_source_profiles: true
+evaluation:
+  primary_metric: target_equal_macro_mse_on_source_top200_genes
+  single_primary_comparison: residual_program_vs_low_rank
+  primary_alternative: residual_program_has_lower_loss
+  primary_bootstrap_repetitions: 20000
+  primary_bootstrap_seed: 303004
+  primary_sign_flip_repetitions: 100000
+  primary_sign_flip_seed: 303005
+  secondary_comparators:
+  - gene_ridge
+  - direct_program
+  - scalar
+  secondary_multiple_testing: holm
+  secondary_gene_sets:
+  - top100
+  - top500
+  - all
+  inferential_unit: perturbation_target_gene
+  effect_size: paired_loss_difference_and_relative_mse_improvement
+promotion_gate:
+  minimum_relative_improvement_over_low_rank: 0.005
+  primary_bootstrap_ci95_low_above: 0.0
+  primary_sign_flip_one_sided_p_at_most: 0.05
+  targets_improved_fraction_at_least: 0.5
+  all_secondary_gene_sets_positive: true
+  random_program_exact_p_at_most: 0.05
+outputs:
+  pre_run_manifest: docs/provenance/k562_screen_validation/pre_run_manifest.json
+  record_metrics: results/reproduced/k562_screen_validation/record_metrics.csv
+  random_program_metrics: results/reproduced/k562_screen_validation/random_program_metrics.csv
+  bootstrap_metrics: results/reproduced/k562_screen_validation/bootstrap_metrics.csv
+  sign_flip_metrics: results/reproduced/k562_screen_validation/sign_flip_metrics.csv
+  summary_json: results/reproduced/k562_screen_validation/large_scale_residual_program_summary.json
+  summary_markdown: results/reproduced/k562_screen_validation/large_scale_residual_program_summary.md
+  output_audit: results/reproduced/k562_screen_validation/large_scale_residual_program_output_audit.json
+claim_boundary:
+  source_and_target_are_distinct_screens_but_from_same_replogle_2022_study: true
+  source_day6_essential_and_target_day8_gwps_use_different_libraries_and_sampling_days: true
+  target_profiles_were_used_in_prior_versions: true
+  this_is_large_scale_internal_development_validation_not_fresh_external_confirmation: true
+  adamson_v28_v29_remains_directional_cross_study_evidence_not_final_confirmation: true
+  low_rank_component_is_operational_nuisance_mapping_not_proven_measurement_quality: true
+  program_residual_is_operational_structured_residual_not_proven_pure_biology: true
+  another_untouched_external_confirmation_is_required_for_a_strong_algorithm_claim: true
+references:
+- Replogle et al. Cell 2022. doi:10.1016/j.cell.2022.05.013
+- Kassis et al. 2026. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065
+repository_reorganization:
+  classification: post_result_organizational_refactor_not_new_preregistration
+  original_protocol: docs/provenance/k562_screen_validation/original_protocol.yaml
+  historical_records_preserved_without_edits: true
+  reference_results_are_immutable: true

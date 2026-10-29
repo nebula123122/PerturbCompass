@@ -1,0 +1,79 @@
+{
+  "status": "V37_REPLICATE_METADATA_ADAPTATION_FROZEN_BEFORE_REPLICATE_OUTCOME_ACCESS",
+  "frozen_at_utc": "2026-10-28T05:38:22.727943+00:00",
+  "generated_after_v36_pooled_results": true,
+  "replicate_outcome_layers_read": false,
+  "original_feasibility_gate": {
+    "dual_guide_heldout_targets_per_condition": 400,
+    "donor_consensus_heldout_targets_per_condition": 700,
+    "thresholds_must_not_be_relaxed_after_replicate_effect_access": true
+  },
+  "original_feasibility_gate_passed": false,
+  "revised_minimum_feasibility": {
+    "dual_guide_heldout_targets_per_condition": 200,
+    "donor_consensus_heldout_targets_per_condition": 150
+  },
+  "observed_label_only_counts": {
+    "Rest": {
+      "heldout": 485,
+      "guide_both": 255,
+      "donor_all_six": 183,
+      "guide_each": {
+        "guide_1": 457,
+        "guide_2": 255
+      },
+      "donor_each": {
+        "CE0006864_CE0008162": 183,
+        "CE0006864_CE0008678": 183,
+        "CE0006864_CE0010866": 183,
+        "CE0008162_CE0008678": 183,
+        "CE0008162_CE0010866": 183,
+        "CE0008678_CE0010866": 183
+      }
+    },
+    "Stim8hr": {
+      "heldout": 485,
+      "guide_both": 285,
+      "donor_all_six": 217,
+      "guide_each": {
+        "guide_1": 467,
+        "guide_2": 285
+      },
+      "donor_each": {
+        "CE0006864_CE0008162": 217,
+        "CE0006864_CE0008678": 217,
+        "CE0006864_CE0010866": 217,
+        "CE0008162_CE0008678": 217,
+        "CE0008162_CE0010866": 217,
+        "CE0008678_CE0010866": 217
+      }
+    },
+    "Stim48hr": {
+      "heldout": 485,
+      "guide_both": 258,
+      "donor_all_six": 198,
+      "guide_each": {
+        "guide_1": 446,
+        "guide_2": 258
+      },
+      "donor_each": {
+        "CE0006864_CE0008162": 198,
+        "CE0006864_CE0008678": 198,
+        "CE0006864_CE0010866": 198,
+        "CE0008162_CE0008678": 198,
+        "CE0008162_CE0010866": 198,
+        "CE0008678_CE0010866": 198
+      }
+    }
+  },
+  "classification": "post_v36_replicate_outcome_blind_metadata_adaptive_validation",
+  "effect_estimands_models_multiplicity_and_success_rules_changed": false,
+  "required_reporting": [
+    "report the original 400-guide and 700-donor feasibility failure",
+    "do not call V37 an untouched preregistered confirmation",
+    "retain target-level bootstrap and all six Holm-adjusted primary components"
+  ],
+  "diagnostic_sha256": "b650c8919ba91168f739060fd5444242464ba2009bd09211d41a751ccb481c99",
+  "old_inspector_sha256": "b2c6c9724773eccac254f8278a4b116c042e6e278b1843473c2c96261f3d0ff9",
+  "new_inspector_sha256": "f39173b5dbdad5b0d945891879dc752b3fca1c1ef1d1d4e35d452aa0ca1103a7"
+}

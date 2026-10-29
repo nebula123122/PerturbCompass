@@ -1,0 +1,193 @@
+{
+  "status": "V39_V36_CONCLUSION_ROBUST_TO_FALLBACK_TARGET_EXCLUSION",
+  "generated_at_utc": "2026-10-28T05:57:58.605132+00:00",
+  "analysis_classification": "post_v36_outcome_exploratory_sensitivity_not_independent_confirmation",
+  "question": "Does V36 retain its locked 2% regret gate after excluding all source-only target-program fallback targets?",
+  "joint_all_three_conditions_pass": true,
+  "fallback_targets_total_eligible": 52,
+  "fallback_targets": [
+    "ABCG1",
+    "ARHGAP11B",
+    "ARMC7",
+    "C16ORF86",
+    "CACNB3",
+    "CCDC78",
+    "CTBP2",
+    "CUL7",
+    "DNLZ",
+    "DPH1",
+    "F8A1",
+    "FAM229A",
+    "GSDMA",
+    "HS6ST1",
+    "IFITM3",
+    "JAZF1",
+    "KDM8",
+    "KLF7",
+    "KLHL11",
+    "LRRC37A3",
+    "LRRC37B",
+    "LTBP3",
+    "MOK",
+    "MST1",
+    "NBPF3",
+    "NDOR1",
+    "PC",
+    "PYROXD1",
+    "RHPN1",
+    "RNF103",
+    "SGPP1",
+    "SLC16A5",
+    "SLC4A5",
+    "SLC9B1",
+    "TIGD1",
+    "TREML2",
+    "TVP23C",
+    "WDR25",
+    "WDR7",
+    "YJEFN3",
+    "YPEL1",
+    "ZFP69B",
+    "ZNF133",
+    "ZNF236",
+    "ZNF253",
+    "ZNF284",
+    "ZNF492",
+    "ZNF559",
+    "ZNF658",
+    "ZNF674",
+    "ZNF687",
+    "ZNF718"
+  ],
+  "conditions": {
+    "Rest": {
+      "heldout_targets_original": 485,
+      "fallback_targets_removed": 36,
+      "heldout_targets_retained": 449,
+      "selector_regret": -0.008872444897952247,
+      "selector_regret_bootstrap_ci95": [
+        -0.009324661982313187,
+        -0.0028048819639992784
+      ],
+      "v36_regret_gate_upper_ci_at_most_0_02": true,
+      "selector_vs_scalar": {
+        "relative_improvement": 0.02055285578268229,
+        "bootstrap_ci95": [
+          0.01801506336718509,
+          0.023213561348508827
+        ],
+        "sign_flip_one_sided_p": 9.99990000099999e-06,
+        "targets_improved_fraction": 0.8485523385300668,
+        "paired_mean_loss_reduction": 0.0024680556706051277
+      },
+      "residual_program_vs_low_rank": {
+        "relative_improvement": 0.011914530943030965,
+        "bootstrap_ci95": [
+          0.010262603219657754,
+          0.013622383255146113
+        ],
+        "sign_flip_one_sided_p": 9.99990000099999e-06,
+        "targets_improved_fraction": 0.8262806236080178,
+        "paired_mean_loss_reduction": 0.0014309243284376066
+      },
+      "family_mean_mse_top200": {
+        "direct_program": 0.1186793422390431,
+        "scalar": 0.1200833449473571,
+        "residual_program": 0.11866816604109261,
+        "low_rank": 0.12009909036953025,
+        "gene_ridge": 0.11900857506304563
+      },
+      "selector_mean_mse_top200": 0.11761528927675198
+    },
+    "Stim8hr": {
+      "heldout_targets_original": 485,
+      "fallback_targets_removed": 36,
+      "heldout_targets_retained": 449,
+      "selector_regret": -0.010366709795050055,
+      "selector_regret_bootstrap_ci95": [
+        -0.011949695453191758,
+        -0.004918077238746527
+      ],
+      "v36_regret_gate_upper_ci_at_most_0_02": true,
+      "selector_vs_scalar": {
+        "relative_improvement": 0.02558983794462344,
+        "bootstrap_ci95": [
+          0.02221948101537083,
+          0.0291782247265211
+        ],
+        "sign_flip_one_sided_p": 9.99990000099999e-06,
+        "targets_improved_fraction": 0.8485523385300668,
+        "paired_mean_loss_reduction": 0.002794768388361122
+      },
+      "residual_program_vs_low_rank": {
+        "relative_improvement": 0.01493690044144047,
+        "bootstrap_ci95": [
+          0.012968115164702356,
+          0.016971211094703478
+        ],
+        "sign_flip_one_sided_p": 9.99990000099999e-06,
+        "targets_improved_fraction": 0.8374164810690423,
+        "paired_mean_loss_reduction": 0.0016305804491510312
+      },
+      "family_mean_mse_top200": {
+        "direct_program": 0.10771012676766979,
+        "scalar": 0.10921399324251324,
+        "residual_program": 0.10753399861085226,
+        "low_rank": 0.10916457906000329,
+        "gene_ridge": 0.10885794848323233
+      },
+      "selector_mean_mse_top200": 0.10641922485415213
+    },
+    "Stim48hr": {
+      "heldout_targets_original": 485,
+      "fallback_targets_removed": 36,
+      "heldout_targets_retained": 449,
+      "selector_regret": 0.0025298012285377425,
+      "selector_regret_bootstrap_ci95": [
+        -5.658737037284034e-09,
+        0.01033005200460286
+      ],
+      "v36_regret_gate_upper_ci_at_most_0_02": true,
+      "selector_vs_scalar": {
+        "relative_improvement": 0.010542800658332241,
+        "bootstrap_ci95": [
+          0.008789440348236399,
+          0.01238382203396575
+        ],
+        "sign_flip_one_sided_p": 9.99990000099999e-06,
+        "targets_improved_fraction": 0.7706013363028953,
+        "paired_mean_loss_reduction": 0.001006617964472368
+      },
+      "residual_program_vs_low_rank": {
+        "relative_improvement": 0.01006239531998232,
+        "bootstrap_ci95": [
+          0.008364080015070746,
+          0.01172289730268817
+        ],
+        "sign_flip_one_sided_p": 9.99990000099999e-06,
+        "targets_improved_fraction": 0.8285077951002228,
+        "paired_mean_loss_reduction": 0.0009578598210548684
+      },
+      "family_mean_mse_top200": {
+        "direct_program": 0.09447256251699282,
+        "scalar": 0.09547918025717508,
+        "residual_program": 0.09423416857726573,
+        "low_rank": 0.09519202839832061,
+        "gene_ridge": 0.09438285598742426
+      },
+      "selector_mean_mse_top200": 0.09447256229270272
+    }
+  },
+  "input_sha256": {
+    "v36_summary": "87e6920565e720556cfdbd518d8b36336c69d5e9e101147a53389eedcd08ef09",
+    "v36_heldout_metrics": "83179b8b45845c2e97d36aa550caefd21813015ab7b3ff1c46ef9be45a44afbf"
+  },
+  "method": {
+    "inferential_unit": "heldout perturbation target",
+    "bootstrap_repetitions": 20000,
+    "best_fixed_family_recomputed_inside_each_bootstrap": true,
+    "sign_flip_repetitions": 100000,
+    "success_threshold_inherited_from_v36": 0.02
+  },
+  "claim_boundary": "Sensitivity analysis only; results were already available when this exclusion was specified."
+}

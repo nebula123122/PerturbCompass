@@ -1,0 +1,16 @@
+{
+  "status": "V37_OUTPUT_AUDIT_PASS",
+  "summary_status": "V37_REPLICATE_CONSISTENT_COMPONENT_CONFIRMED_ALL_CONTEXTS",
+  "replicate_metric_rows": 5184,
+  "consensus_metric_rows": 1396,
+  "quality_diagnostic_rows": 1396,
+  "expected_replicate_metric_rows": 5184,
+  "expected_consensus_metric_rows": 1396,
+  "files": {
+    "data/derived/v37_cd4t_replicates/v37_replicate_metrics.csv": "e2b3a2cea28753a152a2350dc15b1dc4c3c1558f3ca54de33e84678d5eab8c84",
+    "data/derived/v37_cd4t_replicates/v37_consensus_metrics.csv": "35d9ec3bc821a3d8c115fefb7fb414a61a256dc3a1cf0dab138a70fef7b50d7a",
+    "data/derived/v37_cd4t_replicates/v37_quality_diagnostics.csv": "0d33109f79a6393743b556b7acbf7e2dbcde4fd6e19e304090485f2f6dbe27a5",
+    "docs/audit/v37_replicate_separation_summary.json": "2fda2abc646f82f0ca23239bc00cae5c9cb64b7ba8c9ba39a12791e1cc00b1a3",
+    "docs/audit/v37_replicate_separation_summary.md": "d6cd013bd204ac59bc3375f0cc7bde8794073d1897ffa9d89fbb10842a7da2a4"
+  }
+}

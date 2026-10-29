@@ -1,0 +1,755 @@
+#!/usr/bin/env python3
+"""Frozen cross-study K562 confirmation with disjoint target-control folds."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import anndata as ad
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import StandardScaler
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "configs/v28_adamson_cross_study_frozen.yaml"
+
+
+def root_path(value: str) -> Path:
+    return (ROOT / value).resolve()
+
+
+def digest(path: Path, algorithm: str = "sha256") -> str:
+    value = hashlib.new(algorithm)
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(16 * 1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def parse_source_target(value: object) -> str:
+    parts = str(value).split("_")
+    if len(parts) < 2 or not parts[0].isdigit() or not parts[1]:
+        raise ValueError(f"unrecognized source perturbation index: {value}")
+    return parts[1].upper()
+
+
+def gene_lookup(data: ad.AnnData) -> dict[str, int]:
+    values = data.var["gene_name"].astype(str) if "gene_name" in data.var else pd.Index(data.var_names).astype(str)
+    result: dict[str, int] = {}
+    for index, name in enumerate(values):
+        upper = str(name).upper()
+        if upper and upper != "NAN" and upper not in result:
+            result[upper] = index
+    return result
+
+
+def clean_target_labels(raw: pd.Series, config: dict[str, Any]) -> np.ndarray:
+    values = raw.astype(str)
+    labels = values.str.split(str(config["truncate_at"]), n=1).str[0]
+    control = values.str.contains(str(config["control_regex"]), regex=True)
+    labels = labels.mask(control, "CONTROL")
+    labels = labels.mask(values.isin([str(value) for value in config["drop_labels"]]), "DROP")
+    return labels.str.upper().to_numpy(dtype=object)
+
+
+def dense_slice(matrix: Any, columns: np.ndarray) -> np.ndarray:
+    selected = matrix[:, columns]
+    if sp.issparse(selected):
+        selected = selected.toarray()
+    return np.asarray(selected, dtype=np.float32)
+
+
+def aggregate_source(
+    data: ad.AnnData,
+    columns: np.ndarray,
+    minimum_cells: int,
+) -> tuple[list[str], np.ndarray, np.ndarray, np.ndarray]:
+    labels = np.asarray([parse_source_target(value) for value in data.obs_names], dtype=object)
+    cells = data.obs["num_cells_filtered"].to_numpy(dtype=float)
+    matrix = dense_slice(data.X, columns)
+    keep = (cells >= minimum_cells) & np.isfinite(cells) & np.isfinite(matrix).all(axis=1)
+    labels, cells, matrix = labels[keep], cells[keep], matrix[keep]
+    targets = sorted(set(labels))
+    means = np.empty((len(targets), matrix.shape[1]), dtype=np.float32)
+    total_cells = np.empty(len(targets), dtype=float)
+    constructs = np.empty(len(targets), dtype=np.int64)
+    for index, target in enumerate(targets):
+        selected = labels == target
+        weights = cells[selected]
+        means[index] = np.average(matrix[selected], axis=0, weights=weights).astype(np.float32)
+        total_cells[index] = float(weights.sum())
+        constructs[index] = int(selected.sum())
+    return targets, means, total_cells, constructs
+
+
+def target_statistics(
+    target_data: ad.AnnData,
+    genes: list[str],
+    target_config: dict[str, Any],
+) -> dict[str, Any]:
+    lookup = gene_lookup(target_data)
+    columns = np.asarray([lookup[gene] for gene in genes], dtype=np.int64)
+    labels = clean_target_labels(target_data.obs[str(target_config["label_column"])], target_config)
+    ngenes = target_data.obs["ngenes"].to_numpy(dtype=float)
+    ncounts = target_data.obs["ncounts"].to_numpy(dtype=float)
+    keep = (
+        (labels != "DROP")
+        & (ngenes >= int(target_config["minimum_genes_per_cell"]))
+        & np.isfinite(ncounts)
+        & (ncounts > 0)
+    )
+    matrix = target_data.X[keep][:, columns]
+    if not sp.issparse(matrix):
+        matrix = sp.csr_matrix(matrix)
+    matrix = matrix.tocsr().astype(np.float32)
+    scale = float(target_config["normalize_total_target_sum"]) / ncounts[keep]
+    matrix = matrix.multiply(scale[:, None]).tocsr()
+    matrix.data = np.log1p(matrix.data).astype(np.float32)
+    kept_labels = labels[keep]
+
+    control_rows = np.flatnonzero(kept_labels == "CONTROL")
+    if len(control_rows) < 100:
+        raise RuntimeError("too few target control cells after QC")
+    fold_count = int(target_config["control_folds"])
+    rng = np.random.default_rng(int(target_config["control_fold_seed"]))
+    shuffled = rng.permutation(control_rows)
+    control_fold = np.empty(len(control_rows), dtype=np.int16)
+    control_fold[np.arange(len(control_rows))] = np.arange(len(control_rows)) % fold_count
+    row_to_fold = dict(zip(shuffled.tolist(), control_fold.tolist(), strict=True))
+    control_test_means = []
+    control_train_means = []
+    control_fold_sizes = []
+    for fold in range(fold_count):
+        test_rows = np.asarray([row for row in control_rows if row_to_fold[int(row)] == fold], dtype=np.int64)
+        train_rows = np.asarray([row for row in control_rows if row_to_fold[int(row)] != fold], dtype=np.int64)
+        control_test_means.append(np.asarray(matrix[test_rows].mean(axis=0)).ravel().astype(np.float32))
+        control_train_means.append(np.asarray(matrix[train_rows].mean(axis=0)).ravel().astype(np.float32))
+        control_fold_sizes.append({"fold": fold, "train": len(train_rows), "test": len(test_rows)})
+
+    target_means: dict[str, np.ndarray] = {}
+    target_cells: dict[str, int] = {}
+    minimum = int(target_config["minimum_target_cells_after_qc"])
+    for target in sorted(set(kept_labels) - {"CONTROL", "DROP"}):
+        rows = np.flatnonzero(kept_labels == target)
+        if len(rows) >= minimum:
+            target_means[target] = np.asarray(matrix[rows].mean(axis=0)).ravel().astype(np.float32)
+            target_cells[target] = int(len(rows))
+    return {
+        "genes": genes,
+        "target_means": target_means,
+        "target_cells": target_cells,
+        "control_train_means": control_train_means,
+        "control_test_means": control_test_means,
+        "control_fold_sizes": control_fold_sizes,
+        "qc_cells": int(keep.sum()),
+        "control_cells": int(len(control_rows)),
+    }
+
+
+def task_features(source: np.ndarray, cells: np.ndarray, constructs: np.ndarray) -> np.ndarray:
+    rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1.0e-12))
+    return np.column_stack(
+        [
+            rms,
+            np.mean(np.abs(source), axis=1),
+            np.mean(source > 0, axis=1),
+            np.log1p(cells),
+            np.log1p(constructs),
+        ]
+    )
+
+
+def fit_weighted_ridge(
+    x: np.ndarray,
+    y: np.ndarray,
+    weight: np.ndarray,
+    train: np.ndarray,
+    test: np.ndarray,
+    alpha: float,
+) -> np.ndarray:
+    scaler = StandardScaler().fit(x[train])
+    normalized_weight = weight[train] / max(float(weight[train].mean()), 1.0e-12)
+    model = Ridge(alpha=alpha).fit(scaler.transform(x[train]), y[train], sample_weight=normalized_weight)
+    return np.asarray(model.predict(scaler.transform(x[test])), dtype=float)
+
+
+def scalar_oracles(
+    source: np.ndarray,
+    truth: np.ndarray,
+    signatures: list[np.ndarray],
+    lower: float,
+    upper: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    values = np.empty(len(source), dtype=float)
+    curvature = np.empty(len(source), dtype=float)
+    for index, signature in enumerate(signatures):
+        s, t = source[index, signature], truth[index, signature]
+        denominator = max(float(np.dot(s, s)), 1.0e-12)
+        values[index] = np.clip(np.dot(s, t) / denominator, lower, upper)
+        curvature[index] = max(float(np.mean(s * s)), 1.0e-12)
+    return values, curvature
+
+
+def program_source_features(
+    source: np.ndarray,
+    target_indices: np.ndarray,
+    labels: np.ndarray,
+    target_programs: np.ndarray,
+    task_x: np.ndarray,
+    program_count: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    rows, energies, owners = [], [], []
+    for target_index in target_indices:
+        total_energy = max(float(np.dot(source[target_index], source[target_index])), 1.0e-12)
+        for program in range(program_count):
+            mask = labels == program
+            s = source[target_index, mask]
+            energy = max(float(np.dot(s, s)), 1.0e-12)
+            row = [
+                np.sqrt(max(float(np.mean(s * s)), 1.0e-12)),
+                float(np.mean(np.abs(s))),
+                float(np.mean(s > 0)),
+                energy / total_energy,
+                float(np.mean(mask)),
+                float(program == target_programs[target_index]),
+                *task_x[target_index].tolist(),
+                *[float(number == program) for number in range(program_count)],
+            ]
+            rows.append(row)
+            energies.append(energy)
+            owners.append(target_index)
+    return np.asarray(rows, dtype=float), np.asarray(energies, dtype=float), np.asarray(owners, dtype=int)
+
+
+def fit_program_alphas(
+    source: np.ndarray,
+    truth_train: np.ndarray,
+    train: np.ndarray,
+    test: np.ndarray,
+    labels: np.ndarray,
+    target_programs: np.ndarray,
+    task_x: np.ndarray,
+    scalar_prediction: np.ndarray,
+    config: dict[str, Any],
+) -> np.ndarray:
+    program_count = int(config["program_count"])
+    lower, upper = map(float, config["alpha_bounds"])
+    train_indices, test_indices = np.flatnonzero(train), np.flatnonzero(test)
+    x_train, energy_train, owner_train = program_source_features(
+        source, train_indices, labels, target_programs, task_x, program_count
+    )
+    raw_oracle = np.empty(len(x_train), dtype=float)
+    position = 0
+    for target_index in train_indices:
+        local = []
+        for program in range(program_count):
+            mask = labels == program
+            s, t = source[target_index, mask], truth_train[target_index, mask]
+            value = np.clip(np.dot(s, t) / max(float(np.dot(s, s)), 1.0e-12), lower, upper)
+            local.append(float(value))
+        local_array = np.asarray(local)
+        local_energy = energy_train[position : position + program_count]
+        weighted_mean = float(np.average(local_array, weights=local_energy))
+        raw_oracle[position : position + program_count] = local_array - weighted_mean
+        position += program_count
+    x_test, energy_test, owner_test = program_source_features(
+        source, test_indices, labels, target_programs, task_x, program_count
+    )
+    scaler = StandardScaler().fit(x_train)
+    model = Ridge(alpha=float(config["program_ridge_alpha"])).fit(
+        scaler.transform(x_train),
+        raw_oracle,
+        sample_weight=energy_train / max(float(energy_train.mean()), 1.0e-12),
+    )
+    raw = np.asarray(model.predict(scaler.transform(x_test)), dtype=float)
+    result = np.empty((len(test_indices), program_count), dtype=float)
+    for local_index, target_index in enumerate(test_indices):
+        selected = owner_test == target_index
+        delta = raw[selected]
+        weights = energy_test[selected]
+        delta = delta - float(config["centering_strength"]) * float(np.average(delta, weights=weights))
+        result[local_index] = np.clip(
+            scalar_prediction[local_index] + float(config["delta_scale"]) * delta,
+            lower,
+            upper,
+        )
+    return result
+
+
+def global_alpha(
+    source: np.ndarray,
+    truth: np.ndarray,
+    signatures: list[np.ndarray],
+    train: np.ndarray,
+    lower: float,
+    upper: float,
+) -> float:
+    numerator, denominator = 0.0, 0.0
+    for index in np.flatnonzero(train):
+        s, t = source[index, signatures[index]], truth[index, signatures[index]]
+        numerator += float(np.mean(s * t))
+        denominator += float(np.mean(s * s))
+    return float(np.clip(numerator / max(denominator, 1.0e-12), lower, upper))
+
+
+def gene_wise_prediction(
+    source: np.ndarray,
+    truth: np.ndarray,
+    train: np.ndarray,
+    test: np.ndarray,
+    ridge_alpha: float,
+) -> np.ndarray:
+    s, t = source[train].astype(float), truth[train].astype(float)
+    s_mean, t_mean = s.mean(axis=0), t.mean(axis=0)
+    centered_s, centered_t = s - s_mean, t - t_mean
+    slope = np.sum(centered_s * centered_t, axis=0) / (np.sum(centered_s * centered_s, axis=0) + ridge_alpha)
+    intercept = t_mean - slope * s_mean
+    return source[test] * slope + intercept
+
+
+def low_rank_prediction(
+    source: np.ndarray,
+    truth: np.ndarray,
+    train: np.ndarray,
+    test: np.ndarray,
+    components: int,
+    ridge_alpha: float,
+    seed: int,
+) -> np.ndarray:
+    rank = max(2, min(components, int(train.sum()) - 1, source.shape[1] - 1))
+    source_svd = TruncatedSVD(n_components=rank, random_state=seed).fit(source[train])
+    target_svd = TruncatedSVD(n_components=rank, random_state=seed + 1).fit(truth[train])
+    x_train = source_svd.transform(source[train])
+    x_test = source_svd.transform(source[test])
+    y_train = target_svd.transform(truth[train])
+    scaler = StandardScaler().fit(x_train)
+    model = Ridge(alpha=ridge_alpha).fit(scaler.transform(x_train), y_train)
+    return model.predict(scaler.transform(x_test)) @ target_svd.components_
+
+
+def mse(prediction: np.ndarray, truth: np.ndarray, selected: np.ndarray) -> float:
+    return float(np.mean((prediction[selected] - truth[selected]) ** 2))
+
+
+def holm_adjust(p_values: list[float]) -> list[float]:
+    count = len(p_values)
+    order = np.argsort(p_values)
+    adjusted = np.empty(count, dtype=float)
+    running = 0.0
+    for rank, index in enumerate(order):
+        running = max(running, min(1.0, (count - rank) * p_values[index]))
+        adjusted[index] = running
+    return adjusted.tolist()
+
+
+def infer_pair(
+    candidate: np.ndarray,
+    reference: np.ndarray,
+    source_name: str,
+    comparator: str,
+    config: dict[str, Any],
+    seed_offset: int,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+    evaluation = config["evaluation"]
+    bootstrap_rows = []
+    rng = np.random.default_rng(int(evaluation["bootstrap_seed"]) + seed_offset)
+    improvements = np.empty(int(evaluation["bootstrap_repetitions"]), dtype=float)
+    for index in range(len(improvements)):
+        selected = rng.integers(0, len(candidate), size=len(candidate))
+        improvements[index] = 1.0 - candidate[selected].mean() / reference[selected].mean()
+        bootstrap_rows.append(
+            {"source": source_name, "comparator": comparator, "bootstrap": index, "improvement": improvements[index]}
+        )
+    difference = reference - candidate
+    observed = float(difference.mean())
+    repetitions = int(evaluation["sign_flip_repetitions"])
+    rng = np.random.default_rng(int(evaluation["sign_flip_seed"]) + seed_offset)
+    null = np.empty(repetitions, dtype=float)
+    for start in range(0, repetitions, 2000):
+        stop = min(start + 2000, repetitions)
+        signs = rng.choice([-1.0, 1.0], size=(stop - start, len(difference)))
+        null[start:stop] = np.mean(signs * difference[None, :], axis=1)
+    sign_rows = [
+        {"source": source_name, "comparator": comparator, "permutation": index, "null_mean_loss_difference": value}
+        for index, value in enumerate(null)
+    ]
+    ci = np.quantile(improvements, [0.025, 0.975])
+    p_value = float((1 + np.count_nonzero(null >= observed)) / (1 + repetitions))
+    return (
+        {
+            "source": source_name,
+            "comparator": comparator,
+            "improvement": float(1.0 - candidate.mean() / reference.mean()),
+            "ci95": [float(ci[0]), float(ci[1])],
+            "sign_flip_p": p_value,
+            "targets_improved_fraction": float(np.mean(candidate < reference)),
+        },
+        bootstrap_rows,
+        sign_rows,
+    )
+
+
+def evaluate_source(
+    source_name: str,
+    source_data: ad.AnnData,
+    target_data: dict[str, Any],
+    union_gene_index: dict[str, int],
+    config: dict[str, Any],
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    model_config = config["model"]
+    source_lookup = gene_lookup(source_data)
+    genes = sorted(set(source_lookup) & set(union_gene_index))
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    target_columns = np.asarray([union_gene_index[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = aggregate_source(
+        source_data, source_columns, int(config["source_preprocessing"]["minimum_cells_per_construct"])
+    )
+    source_map = {target: index for index, target in enumerate(source_targets)}
+    eligible = sorted(
+        set(source_targets)
+        & set(target_data["target_means"])
+        & set(genes)
+    )
+    source = np.stack([source_means[source_map[target]] for target in eligible]).astype(np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in eligible], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in eligible], dtype=int)
+    target_means = np.stack([target_data["target_means"][target][target_columns] for target in eligible]).astype(np.float32)
+    target_cells = np.asarray([target_data["target_cells"][target] for target in eligible], dtype=int)
+
+    minimum_targets = int(config["confirmation_gate"]["minimum_eligible_targets"])
+    if len(eligible) < minimum_targets:
+        raise RuntimeError(f"{source_name} has only {len(eligible)} eligible targets; minimum is {minimum_targets}")
+    program_count = int(model_config["program_count"])
+    components = min(32, source.shape[0] - 1, source.shape[1] - 1)
+    embedding = TruncatedSVD(n_components=components, random_state=int(model_config["program_seed"])).fit_transform(source.T)
+    labels = KMeans(n_clusters=program_count, random_state=int(model_config["program_seed"]), n_init=20).fit_predict(embedding)
+    gene_to_index = {gene: index for index, gene in enumerate(genes)}
+    target_programs = np.asarray([labels[gene_to_index[target]] for target in eligible], dtype=int)
+    task_x = task_features(source, cells, constructs)
+    signatures = [
+        np.argsort(np.abs(source[index]))[-int(model_config["top_signature_genes"]) :]
+        for index in range(len(eligible))
+    ]
+
+    rng = np.random.default_rng(int(model_config["target_fold_seed"]))
+    folds = np.empty(len(eligible), dtype=int)
+    permutation = rng.permutation(len(eligible))
+    folds[permutation] = np.arange(len(eligible)) % int(model_config["outer_target_folds"])
+    random_rng = np.random.default_rng(int(model_config["random_program_seed"]))
+    random_labels = [random_rng.permutation(labels) for _ in range(int(model_config["random_program_partitions"]))]
+    random_losses: dict[int, list[float]] = {index: [] for index in range(len(random_labels))}
+    rows: list[dict[str, Any]] = []
+    lower, upper = map(float, model_config["alpha_bounds"])
+
+    for outer in range(int(model_config["outer_target_folds"])):
+        train, test = folds != outer, folds == outer
+        control_train = target_data["control_train_means"][outer][target_columns]
+        control_test = target_data["control_test_means"][outer][target_columns]
+        truth_train = target_means - control_train
+        truth_test = target_means - control_test
+        oracles, curvature = scalar_oracles(source, truth_train, signatures, lower, upper)
+        scalar_prediction = np.clip(
+            fit_weighted_ridge(
+                task_x,
+                oracles,
+                curvature,
+                train,
+                test,
+                float(model_config["scalar_ridge_alpha"]),
+            ),
+            lower,
+            upper,
+        )
+        program_alpha = fit_program_alphas(
+            source, truth_train, train, test, labels, target_programs, task_x, scalar_prediction, model_config
+        )
+        fixed_alpha = global_alpha(source, truth_train, signatures, train, lower, upper)
+        gene_prediction = gene_wise_prediction(
+            source, truth_train, train, test, float(model_config["gene_wise_ridge_alpha"])
+        )
+        low_rank = low_rank_prediction(
+            source,
+            truth_train,
+            train,
+            test,
+            int(model_config["low_rank_components"]),
+            float(model_config["low_rank_ridge_alpha"]),
+            int(model_config["target_fold_seed"]) + outer,
+        )
+        test_indices = np.flatnonzero(test)
+        random_alpha_by_partition = [
+            fit_program_alphas(
+                source,
+                truth_train,
+                train,
+                test,
+                random_partition,
+                np.asarray([random_partition[gene_to_index[target]] for target in eligible], dtype=int),
+                task_x,
+                scalar_prediction,
+                model_config,
+            )
+            for random_partition in random_labels
+        ]
+        for local_index, target_index in enumerate(test_indices):
+            truth = truth_test[target_index]
+            source_row = source[target_index]
+            predictions = {
+                "identity": source_row,
+                "global": fixed_alpha * source_row,
+                "scalar": scalar_prediction[local_index] * source_row,
+                "program": program_alpha[local_index][labels] * source_row,
+                "gene_ridge": gene_prediction[local_index],
+                "low_rank": low_rank[local_index],
+            }
+            ranked = np.argsort(np.abs(source_row))
+            selections = {
+                "top100": ranked[-min(100, len(ranked)) :],
+                "top200": signatures[target_index],
+                "top500": ranked[-min(500, len(ranked)) :],
+                "all": np.arange(len(genes)),
+            }
+            row: dict[str, Any] = {
+                "source": source_name,
+                "target": eligible[target_index],
+                "outer_fold": outer,
+                "source_cells": cells[target_index],
+                "source_constructs": constructs[target_index],
+                "target_cells": target_cells[target_index],
+                "scalar_alpha": scalar_prediction[local_index],
+                "program_alpha_mean": float(program_alpha[local_index].mean()),
+                "program_alpha_sd": float(program_alpha[local_index].std()),
+                "global_alpha": fixed_alpha,
+            }
+            for selection_name, selected in selections.items():
+                for method, prediction in predictions.items():
+                    row[f"{method}_mse_{selection_name}"] = mse(prediction, truth, selected)
+            rows.append(row)
+            selected = selections["top200"]
+            for partition, alpha in enumerate(random_alpha_by_partition):
+                prediction = alpha[local_index][random_labels[partition]] * source_row
+                random_losses[partition].append(mse(prediction, truth, selected))
+        print(json.dumps({"stage": "v28_outer_fold", "source": source_name, "fold": outer, "test_targets": int(test.sum())}), flush=True)
+
+    records = pd.DataFrame(rows).sort_values("target").reset_index(drop=True)
+    random_records = pd.DataFrame(
+        [
+            {"source": source_name, "partition": partition, "mean_mse_top200": float(np.mean(losses))}
+            for partition, losses in random_losses.items()
+        ]
+    )
+    candidate_mean = float(records["program_mse_top200"].mean())
+    random_p = float((1 + np.count_nonzero(random_records["mean_mse_top200"] <= candidate_mean)) / (1 + len(random_records)))
+    metadata = {
+        "eligible_targets": len(eligible),
+        "eligible_target_names": eligible,
+        "common_measured_genes": len(genes),
+        "control_fold_sizes": target_data["control_fold_sizes"],
+        "random_program_exact_p": random_p,
+        "random_program_mean_mse_quantiles": np.quantile(random_records["mean_mse_top200"], [0.025, 0.5, 0.975]).tolist(),
+    }
+    return records, random_records, metadata
+
+
+def verify_freeze(config_path: Path, config: dict[str, Any]) -> None:
+    manifest = json.loads(root_path(config["outputs"]["pre_run_manifest"]).read_text(encoding="utf-8"))
+    if manifest["status"] != "FROZEN_BEFORE_V28_TARGET_EXPRESSION_ACCESS":
+        raise RuntimeError("V28 pre-run manifest status mismatch")
+    if manifest["config_sha256"] != digest(config_path):
+        raise RuntimeError("V28 config changed after freeze")
+    if manifest["runner_sha256"] != digest(Path(__file__).resolve()):
+        raise RuntimeError("V28 runner changed after freeze")
+    target_path = root_path(config["inputs"]["target_h5ad"])
+    if manifest["target_sha256"] != digest(target_path):
+        raise RuntimeError("V28 target file changed after freeze")
+    if digest(target_path, "md5") != config["inputs"]["target_expected_md5"]:
+        raise RuntimeError("V28 target official MD5 mismatch")
+    for name, source in config["inputs"]["sources"].items():
+        path = root_path(source["h5ad"])
+        if manifest["source_sha256"][name] != digest(path):
+            raise RuntimeError(f"V28 {name} source changed after freeze")
+        if digest(path, "md5") != source["expected_md5"]:
+            raise RuntimeError(f"V28 {name} source official MD5 mismatch")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config_path = args.config.resolve()
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    verify_freeze(config_path, config)
+    feasibility = json.loads(root_path(config["inputs"]["metadata_feasibility"]).read_text(encoding="utf-8"))
+    if feasibility.get("target_expression_accessed") is not False:
+        raise RuntimeError("metadata feasibility audit does not prove outcome blinding")
+
+    target = ad.read_h5ad(root_path(config["inputs"]["target_h5ad"]))
+    sources = {
+        name: ad.read_h5ad(root_path(source["h5ad"]))
+        for name, source in config["inputs"]["sources"].items()
+    }
+    target_lookup = gene_lookup(target)
+    if "ncells" in target.var:
+        retained_target_genes = {
+            gene for gene, index in target_lookup.items()
+            if float(target.var.iloc[index]["ncells"]) >= int(config["target_preprocessing"]["minimum_cells_expressing_gene"])
+        }
+    else:
+        retained_target_genes = set(target_lookup)
+    source_gene_union = set().union(*(set(gene_lookup(data)) for data in sources.values()))
+    union_genes = sorted(retained_target_genes & source_gene_union)
+    target_stats = target_statistics(target, union_genes, config["target_preprocessing"])
+    union_gene_index = {gene: index for index, gene in enumerate(union_genes)}
+
+    record_frames, random_frames = [], []
+    source_metadata: dict[str, Any] = {}
+    for source_name in [config["protocol"]["primary_source"], config["protocol"]["sensitivity_source"]]:
+        records, random_records, metadata = evaluate_source(
+            source_name, sources[source_name], target_stats, union_gene_index, config
+        )
+        record_frames.append(records)
+        random_frames.append(random_records)
+        source_metadata[source_name] = metadata
+    records = pd.concat(record_frames, ignore_index=True)
+    random_records = pd.concat(random_frames, ignore_index=True)
+
+    comparisons: list[dict[str, Any]] = []
+    bootstrap_rows: list[dict[str, Any]] = []
+    sign_rows: list[dict[str, Any]] = []
+    comparators = ["identity", "global", "scalar", "gene_ridge", "low_rank"]
+    for source_index, source_name in enumerate([config["protocol"]["primary_source"], config["protocol"]["sensitivity_source"]]):
+        selected = records.loc[records["source"] == source_name].reset_index(drop=True)
+        local = []
+        for comparator_index, comparator in enumerate(comparators):
+            result, boot, signs = infer_pair(
+                selected["program_mse_top200"].to_numpy(dtype=float),
+                selected[f"{comparator}_mse_top200"].to_numpy(dtype=float),
+                source_name,
+                comparator,
+                config,
+                100 * source_index + comparator_index,
+            )
+            local.append(result)
+            bootstrap_rows.extend(boot)
+            sign_rows.extend(signs)
+        adjusted = holm_adjust([row["sign_flip_p"] for row in local])
+        for row, value in zip(local, adjusted, strict=True):
+            row["holm_adjusted_p"] = value
+            comparisons.append(row)
+
+    comparison_map = {(row["source"], row["comparator"]): row for row in comparisons}
+    primary = str(config["protocol"]["primary_source"])
+    sensitivity = str(config["protocol"]["sensitivity_source"])
+    primary_records = records.loc[records["source"] == primary]
+    primary_scalar = comparison_map[(primary, "scalar")]
+    sensitivity_scalar = comparison_map[(sensitivity, "scalar")]
+    sensitivities = {
+        name: float(
+            1.0
+            - primary_records[f"program_mse_{name}"].mean()
+            / primary_records[f"scalar_mse_{name}"].mean()
+        )
+        for name in ["top100", "top500", "all"]
+    }
+    gate_config = config["confirmation_gate"]
+    gates = {
+        "minimum_targets": source_metadata[primary]["eligible_targets"] >= int(gate_config["minimum_eligible_targets"]),
+        "improvement": primary_scalar["improvement"] > float(gate_config["improvement_over_scalar_ridge_above"]),
+        "bootstrap_ci": primary_scalar["ci95"][0] > float(gate_config["bootstrap_ci95_low_above"]),
+        "holm_sign_flip": primary_scalar["holm_adjusted_p"] <= float(gate_config["holm_adjusted_sign_flip_p_at_most"]),
+        "target_fraction": primary_scalar["targets_improved_fraction"] >= float(gate_config["targets_improved_fraction_at_least"]),
+        "secondary_gene_sets": all(value > 0.0 for value in sensitivities.values()),
+        "random_program": source_metadata[primary]["random_program_exact_p"] <= float(gate_config["random_program_exact_p_at_most"]),
+        "sensitivity_source": sensitivity_scalar["improvement"] > 0.0,
+    }
+    publication_config = config["publication_superiority_gate"]
+    publication_gates = {
+        "below_gene_ridge": comparison_map[(primary, "gene_ridge")]["improvement"] > 0.0,
+        "below_low_rank": comparison_map[(primary, "low_rank")]["improvement"] > 0.0,
+        "gene_ridge_holm": comparison_map[(primary, "gene_ridge")]["holm_adjusted_p"] <= float(publication_config["holm_adjusted_p_at_most_for_each"]),
+        "low_rank_holm": comparison_map[(primary, "low_rank")]["holm_adjusted_p"] <= float(publication_config["holm_adjusted_p_at_most_for_each"]),
+    }
+    core_status = "CROSS_STUDY_CORE_CONFIRMED" if all(gates.values()) else "CROSS_STUDY_CORE_NOT_CONFIRMED"
+    publication_status = "PUBLICATION_SUPERIORITY_CONFIRMED" if all(publication_gates.values()) else "PUBLICATION_SUPERIORITY_NOT_CONFIRMED"
+
+    output_paths = {
+        key: root_path(config["outputs"][key])
+        for key in ["record_metrics", "bootstrap_metrics", "sign_flip_metrics", "random_program_metrics"]
+    }
+    for path in output_paths.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    records.to_csv(output_paths["record_metrics"], index=False)
+    pd.DataFrame(bootstrap_rows).to_csv(output_paths["bootstrap_metrics"], index=False)
+    pd.DataFrame(sign_rows).to_csv(output_paths["sign_flip_metrics"], index=False)
+    random_records.to_csv(output_paths["random_program_metrics"], index=False)
+
+    rankings = {}
+    for source_name in [primary, sensitivity]:
+        selected = records.loc[records["source"] == source_name]
+        rankings[source_name] = sorted(
+            [
+                {"method": method, "mean_mse_top200": float(selected[f"{method}_mse_top200"].mean())}
+                for method in ["identity", "global", "scalar", "program", "gene_ridge", "low_rank"]
+            ],
+            key=lambda row: row["mean_mse_top200"],
+        )
+    summary = {
+        "stage": "V28 frozen Adamson cross-study K562 confirmation",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "core_status": core_status,
+        "publication_status": publication_status,
+        "target_shape": list(map(int, target.shape)),
+        "target_qc_cells": target_stats["qc_cells"],
+        "target_control_cells": target_stats["control_cells"],
+        "source_metadata": source_metadata,
+        "comparisons": comparisons,
+        "primary_secondary_gene_set_improvements_over_scalar": sensitivities,
+        "rankings": rankings,
+        "gates": {key: bool(value) for key, value in gates.items()},
+        "publication_gates": {key: bool(value) for key, value in publication_gates.items()},
+        "claim_boundary": config["claim_boundary"],
+        "output_hashes": {key: digest(path) for key, path in output_paths.items()},
+    }
+    summary_path = root_path(config["outputs"]["summary_json"])
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    primary_gene = comparison_map[(primary, "gene_ridge")]
+    primary_low_rank = comparison_map[(primary, "low_rank")]
+    root_path(config["outputs"]["summary_markdown"]).write_text(
+        "\n".join(
+            [
+                "# V28 Adamson cross-study K562 confirmation",
+                "",
+                f"- Core status: **{core_status}**",
+                f"- Publication superiority: **{publication_status}**",
+                f"- Primary eligible targets: {source_metadata[primary]['eligible_targets']}",
+                f"- Program vs scalar improvement: {100 * primary_scalar['improvement']:.3f}%",
+                f"- Bootstrap 95% CI: [{100 * primary_scalar['ci95'][0]:.3f}%, {100 * primary_scalar['ci95'][1]:.3f}%]",
+                f"- Holm-adjusted sign-flip p: {primary_scalar['holm_adjusted_p']:.6f}",
+                f"- Program vs gene-wise Ridge: {100 * primary_gene['improvement']:.3f}%",
+                f"- Program vs low-rank Ridge: {100 * primary_low_rank['improvement']:.3f}%",
+                f"- Exact-size random-program p: {source_metadata[primary]['random_program_exact_p']:.6f}",
+                "",
+                "Training and test target effects use mutually exclusive target-control cells within every outer fold.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

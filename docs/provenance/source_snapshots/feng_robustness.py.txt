@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""Post-V31 robustness diagnostics; explicitly exploratory, never confirmatory."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import yaml
+from scipy.stats import binomtest, spearmanr, trim_mean
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "configs/v32_v31_robustness_exploratory.yaml"
+
+
+def root_path(value: str) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def relative_improvement(candidate: np.ndarray, comparator: np.ndarray) -> float:
+    return float(1.0 - np.mean(candidate) / np.mean(comparator))
+
+
+def trimmed_relative_improvement(
+    candidate: np.ndarray, comparator: np.ndarray, proportion: float
+) -> float:
+    return float(1.0 - trim_mean(candidate, proportion) / trim_mean(comparator, proportion))
+
+
+def leave_largest_out(
+    candidate: np.ndarray, comparator: np.ndarray, removals: list[int]
+) -> list[dict[str, Any]]:
+    difference = comparator - candidate
+    order = np.argsort(np.abs(difference))[::-1]
+    rows: list[dict[str, Any]] = []
+    for count in removals:
+        keep = np.ones(len(candidate), dtype=bool)
+        keep[order[:count]] = False
+        rows.append(
+            {
+                "removed": int(count),
+                "remaining": int(keep.sum()),
+                "relative_improvement": relative_improvement(candidate[keep], comparator[keep]),
+                "fraction_improved": float(np.mean(candidate[keep] < comparator[keep])),
+            }
+        )
+    return rows
+
+
+def permutation_spearman(
+    feature: np.ndarray, benefit: np.ndarray, repetitions: int, seed: int
+) -> tuple[float, float]:
+    observed = float(spearmanr(feature, benefit).statistic)
+    rng = np.random.default_rng(seed)
+    extreme = 0
+    for _ in range(repetitions):
+        permuted = rng.permutation(benefit)
+        value = float(spearmanr(feature, permuted).statistic)
+        extreme += int(abs(value) >= abs(observed))
+    return observed, float((1 + extreme) / (1 + repetitions))
+
+
+def subgroup_row(
+    frame: pd.DataFrame, label: str, value: str, candidate_col: str, comparator_col: str
+) -> dict[str, Any]:
+    candidate = frame[candidate_col].to_numpy(float)
+    comparator = frame[comparator_col].to_numpy(float)
+    return {
+        "subgroup": label,
+        "level": value,
+        "n": int(len(frame)),
+        "relative_improvement": relative_improvement(candidate, comparator),
+        "fraction_improved": float(np.mean(candidate < comparator)),
+        "mean_absolute_loss_reduction": float(np.mean(comparator - candidate)),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    spec = config["analysis"]
+    records = pd.read_csv(root_path(config["input"]["record_metrics"]))
+    v31 = json.loads(root_path(config["input"]["v31_summary"]).read_text(encoding="utf-8"))
+    scope = str(spec["metric_scope"])
+    candidate_name = str(spec["candidate"])
+    comparator_name = str(spec["primary_comparator"])
+    candidate_col = f"{candidate_name}_mse_{scope}"
+    comparator_col = f"{comparator_name}_mse_{scope}"
+    required = {
+        "target",
+        "coverage_stratum",
+        candidate_col,
+        comparator_col,
+        *spec["heterogeneity_features"],
+    }
+    missing = sorted(required - set(records.columns))
+    if missing:
+        raise RuntimeError(f"missing V32 columns: {missing}")
+    if records["target"].duplicated().any() or len(records) != int(v31["heldout_targets"]):
+        raise RuntimeError("V32 record set is not the exact V31 held-out target set")
+
+    candidate = records[candidate_col].to_numpy(float)
+    comparator = records[comparator_col].to_numpy(float)
+    benefit = comparator - candidate
+    wins = int(np.count_nonzero(benefit > 0))
+    trim_fraction = float(spec["trim_fraction"])
+
+    influence = leave_largest_out(candidate, comparator, list(map(int, spec["influence_removals"])))
+    loo = []
+    for index in range(len(records)):
+        keep = np.ones(len(records), dtype=bool)
+        keep[index] = False
+        loo.append(relative_improvement(candidate[keep], comparator[keep]))
+
+    subgroup_rows: list[dict[str, Any]] = []
+    for level, group in records.groupby("coverage_stratum", sort=True):
+        subgroup_rows.append(
+            subgroup_row(group, "coverage_stratum", str(int(level)), candidate_col, comparator_col)
+        )
+    effect_bin = pd.qcut(records["source_effect_rms"], 4, labels=False, duplicates="drop") + 1
+    for level, group in records.groupby(effect_bin, sort=True):
+        subgroup_rows.append(
+            subgroup_row(group, "source_effect_rms_quartile", str(int(level)), candidate_col, comparator_col)
+        )
+
+    correlation_rows = []
+    repetitions = int(spec["correlation_permutations"])
+    seed = int(spec["correlation_seed"])
+    for offset, feature in enumerate(spec["heterogeneity_features"]):
+        rho, p_value = permutation_spearman(
+            records[feature].to_numpy(float), benefit, repetitions, seed + offset
+        )
+        correlation_rows.append(
+            {
+                "feature": feature,
+                "spearman_rho": rho,
+                "permutation_two_sided_p": p_value,
+                "repetitions": repetitions,
+            }
+        )
+
+    direct_name = "direct_program"
+    direct = records[f"{direct_name}_mse_{scope}"].to_numpy(float)
+    direct_comparisons = []
+    for name in spec["direct_program_comparators"]:
+        reference = records[f"{name}_mse_{scope}"].to_numpy(float)
+        direct_comparisons.append(
+            {
+                "comparator": name,
+                "relative_improvement": relative_improvement(direct, reference),
+                "fraction_improved": float(np.mean(direct < reference)),
+            }
+        )
+
+    summary = {
+        "stage": config["stage"],
+        "analysis_status": config["analysis_status"],
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "heldout_targets": int(len(records)),
+        "primary_robustness": {
+            "comparison": f"{candidate_name}_vs_{comparator_name}",
+            "relative_improvement": relative_improvement(candidate, comparator),
+            "trimmed_relative_improvement": trimmed_relative_improvement(
+                candidate, comparator, trim_fraction
+            ),
+            "trim_fraction_each_tail": trim_fraction,
+            "wins": wins,
+            "losses_or_ties": int(len(records) - wins),
+            "exact_one_sided_sign_p": float(
+                binomtest(wins, len(records), 0.5, alternative="greater").pvalue
+            ),
+            "leave_one_out_relative_improvement_range": [float(np.min(loo)), float(np.max(loo))],
+            "all_leave_one_out_positive": bool(np.min(loo) > 0),
+            "largest_influence_removals": influence,
+        },
+        "direct_program_external_ranking": {
+            "mean_mse_top200": float(np.mean(direct)),
+            "comparisons": direct_comparisons,
+            "interpretation": "post_v31_exploratory_model_family_signal_not_confirmatory",
+        },
+        "heterogeneity": {
+            "subgroups": subgroup_rows,
+            "correlations": correlation_rows,
+            "multiplicity_note": "exploratory_unadjusted_descriptive",
+        },
+        "claim_boundary": {
+            "post_outcome_exploratory": True,
+            "does_not_upgrade_number_of_independent_external_screens": True,
+            "subgroup_and_correlation_results_require_future_confirmation": True,
+            "robustness_diagnostics_do_not_replace_v31_prespecified_inference": True,
+        },
+    }
+
+    output_paths = {key: root_path(value) for key, value in config["outputs"].items()}
+    for path in output_paths.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(subgroup_rows).to_csv(output_paths["subgroup_csv"], index=False)
+    pd.DataFrame(influence).to_csv(output_paths["influence_csv"], index=False)
+    pd.DataFrame(correlation_rows).to_csv(output_paths["correlation_csv"], index=False)
+    output_paths["summary_json"].write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    p = summary["primary_robustness"]
+    direct_vs = {row["comparator"]: row for row in direct_comparisons}
+    lines = [
+        "# V32 V31 外部结果稳健性与异质性（探索性）",
+        "",
+        f"- 分析状态：**{config['analysis_status']}**（在 V31 结果揭盲后设计）",
+        f"- V31 测试靶点：{len(records)}",
+        f"- 残差程序相对低秩：{100*p['relative_improvement']:.3f}%",
+        f"- 10% 截尾后：{100*p['trimmed_relative_improvement']:.3f}%",
+        f"- 改善靶点：{wins}/{len(records)}；精确单侧符号检验 p={p['exact_one_sided_sign_p']:.6g}",
+        f"- leave-one-out 改善范围：{100*p['leave_one_out_relative_improvement_range'][0]:.3f}% 至 {100*p['leave_one_out_relative_improvement_range'][1]:.3f}%",
+        f"- 去掉 5 个绝对影响最大靶点后：{100*influence[-1]['relative_improvement']:.3f}%",
+        f"- direct-program 相对残差程序：{100*direct_vs['residual_program']['relative_improvement']:.3f}%",
+        f"- direct-program 相对 gene-wise Ridge：{100*direct_vs['gene_ridge']['relative_improvement']:.3f}%",
+        "",
+        "这些诊断表明结果是否由少数异常靶点驱动；异质性分析仅用于产生下一阶段假设，不属于 V31 预设确认性结论。",
+    ]
+    output_paths["summary_md"].write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

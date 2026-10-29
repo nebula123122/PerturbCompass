@@ -1,0 +1,18 @@
+{
+  "status": "V31_TO_V36_REGRESSION_TESTS_PASS",
+  "run_on": "2026-10-28",
+  "environment": "/root/miniconda3/envs/perturbcompass",
+  "passed": 22,
+  "failed": 0,
+  "elapsed_seconds": 3.32,
+  "test_files": [
+    "tests/test_v31_feng_external_validation.py",
+    "tests/test_v32_v31_robustness.py",
+    "tests/test_v33_anchor_family_selector.py",
+    "tests/test_v34_anchor_budget.py",
+    "tests/test_v34_manuscript_bundle.py",
+    "tests/test_v35_nadig_prospective_selector.py",
+    "tests/test_v36_cd4t_prospective_selector.py"
+  ],
+  "scope": "synthetic and output-contract regression tests; this record does not substitute for scientific validation"
+}

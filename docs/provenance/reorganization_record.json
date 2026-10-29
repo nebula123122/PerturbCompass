@@ -1,0 +1,14 @@
+{
+  "generated_at_utc": "2026-10-28T16:01:47.995018+00:00",
+  "classification": "post_result_repository_reorganization",
+  "new_preregistration_claim": false,
+  "model_hyperparameters_or_statistical_thresholds_intentionally_changed": false,
+  "original_git_history_preserved": true,
+  "historical_record_contents_preserved": true,
+  "original_file_count": 1439,
+  "original_bytes": 504063983102,
+  "retained_raw_bytes": 67341840079,
+  "embedded_original_document_count": 424,
+  "legacy_identifiers_inside_frozen_records_are_intentional": true,
+  "backup_location_is_private_and_not_part_of_release": "See the local recovery record outside this repository."
+}

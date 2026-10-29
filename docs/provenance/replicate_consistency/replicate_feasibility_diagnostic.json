@@ -1,0 +1,69 @@
+{
+  "status": "V37_LABEL_ONLY_FEASIBILITY_DIAGNOSED_WITHOUT_REPLICATE_OUTCOME_ACCESS",
+  "generated_after_v36_pooled_result": true,
+  "replicate_outcome_layers_read": false,
+  "original_gate": {
+    "dual_guide_heldout_targets_per_condition": 400,
+    "donor_consensus_heldout_targets_per_condition": 700,
+    "thresholds_must_not_be_relaxed_after_replicate_effect_access": true
+  },
+  "original_gate_passed": false,
+  "counts": {
+    "Rest": {
+      "heldout": 485,
+      "guide_both": 255,
+      "donor_all_six": 183,
+      "guide_each": {
+        "guide_1": 457,
+        "guide_2": 255
+      },
+      "donor_each": {
+        "CE0006864_CE0008162": 183,
+        "CE0006864_CE0008678": 183,
+        "CE0006864_CE0010866": 183,
+        "CE0008162_CE0008678": 183,
+        "CE0008162_CE0010866": 183,
+        "CE0008678_CE0010866": 183
+      }
+    },
+    "Stim8hr": {
+      "heldout": 485,
+      "guide_both": 285,
+      "donor_all_six": 217,
+      "guide_each": {
+        "guide_1": 467,
+        "guide_2": 285
+      },
+      "donor_each": {
+        "CE0006864_CE0008162": 217,
+        "CE0006864_CE0008678": 217,
+        "CE0006864_CE0010866": 217,
+        "CE0008162_CE0008678": 217,
+        "CE0008162_CE0010866": 217,
+        "CE0008678_CE0010866": 217
+      }
+    },
+    "Stim48hr": {
+      "heldout": 485,
+      "guide_both": 258,
+      "donor_all_six": 198,
+      "guide_each": {
+        "guide_1": 446,
+        "guide_2": 258
+      },
+      "donor_each": {
+        "CE0006864_CE0008162": 198,
+        "CE0006864_CE0008678": 198,
+        "CE0006864_CE0010866": 198,
+        "CE0008162_CE0008678": 198,
+        "CE0008162_CE0010866": 198,
+        "CE0008678_CE0010866": 198
+      }
+    }
+  },
+  "proposed_adaptive_minima": {
+    "dual_guide_heldout_targets_per_condition": 200,
+    "donor_consensus_heldout_targets_per_condition": 150
+  },
+  "rationale": "The original 400/700 availability gate was calibrated to a larger anticipated held-out set; the final frozen V36 partition has only 485 held-out targets. The revised minima preserve at least 200 or 150 independent target-level units per condition and do not use guide/donor effect values."
+}

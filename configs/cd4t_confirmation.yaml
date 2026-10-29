@@ -1,0 +1,141 @@
+protocol:
+  name: perturbcompass-cd4t-confirmation
+  version: 1
+  frozen_on: '2026-10-28'
+  status: ready_for_pre_numeric_seal
+  analysis_type: blinded_metadata_adaptive_three_context_external_confirmation
+  outcome_informed_revision_disclosed: remove_forced_scalar_and_use_bootstrap_best_probability_model_averaging_when_ambiguous
+source:
+  study: Replogle_et_al_2022
+  cell_context: K562
+  modality: CRISPRi
+  h5ad: data/raw/replogle_k562/K562_essential_normalized_bulk_01.h5ad
+  expected_md5: 30496767641cd2e660ee6ecb5baee132
+  minimum_cells_per_construct: 10
+target:
+  study: Zhu_Dann_et_al_Cell_2026
+  publication_doi: 10.1016/j.cell.2026.08.002
+  cell_context: primary_human_CD4_T_cells
+  conditions:
+  - Rest
+  - Stim8hr
+  - Stim48hr
+  path: data/raw/primary_cd4t/GWCD4i.DE_stats.h5ad
+  expected_size_bytes: 16786240107
+  expected_sha256: c355f535ff32cf7ba1edc49cf9c6039fe84f2c9ebe4d005515cba75790cfbb62
+  effect_layer: log_fc
+  effect_scale: DESeq2_log2_fold_change
+  expected_common_genes: 6851
+  no_effect_layer_transform: true
+frozen_inputs:
+  predownload_config: docs/provenance/cd4t_confirmation/predownload_protocol.yaml
+  predownload_freeze: docs/provenance/cd4t_confirmation/pre_download_freeze.json
+  endpoint_amendment: docs/provenance/cd4t_confirmation/download_endpoint_amendment.json
+  parallelism_amendment: docs/provenance/cd4t_confirmation/download_parallelism_amendment.json
+  range_checkpoint_amendment: docs/provenance/cd4t_confirmation/download_range_checkpoint_amendment.json
+  metadata_missingness_amendment: docs/provenance/cd4t_confirmation/metadata_missingness_amendment.json
+  blinded_sample_size_amendment: docs/provenance/cd4t_confirmation/blinded_sample_size_amendment.json
+  metadata_report: docs/provenance/cd4t_confirmation/cd4t_metadata_feasibility.json
+  metadata_report_sha256: 9ffff078e549ec7229766796d30159c8b92efc5c4224fe557ea0100053cd6cc2
+  shared_partition: data/processed/cd4t_confirmation/shared_partition.csv
+  shared_partition_sha256: 6fe4bc1455a3d5b9aae970d75e6291c38c84bff3b8df69554138d39224504182
+  eligible_targets: data/processed/cd4t_confirmation/shared_eligible_targets.csv
+  eligible_targets_sha256: f7570e4df14582de0a005f097262821d384b6af4ece154fa60ae90abd192b92f
+partition:
+  anchor_role: anchor
+  heldout_role: test
+  expected_anchor_targets: 256
+  expected_heldout_targets: 485
+  common_partition_across_conditions: true
+  no_repartition_after_numeric_access: true
+model:
+  families:
+  - direct_program
+  - scalar
+  - residual_program
+  - low_rank
+  - gene_ridge
+  inner_target_folds: 4
+  inner_fold_seed: 303002
+  program_count: 16
+  program_seed: 252516
+  low_rank_components: 16
+  low_rank_ridge_alpha: 10.0
+  scalar_ridge_alpha: 100.0
+  program_ridge_alpha: 10.0
+  direct_program_alpha_bounds:
+  - 0.0
+  - 1.5
+  direct_program_centering_strength: 0.5
+  residual_program_beta_bounds:
+  - -0.75
+  - 0.75
+  residual_centering_strength: 1.0
+  top_signature_genes: 200
+  anchor_oof_folds: 5
+  anchor_oof_seed: 360037
+  no_hyperparameter_search: true
+  preprocessing_fit_within_anchor_only: true
+  source_only_program_learning_may_use_all_partition_source_profiles: true
+selector:
+  primary_metric: target_equal_macro_mse_on_source_top200_genes
+  anchor_bootstrap_repetitions: 20000
+  anchor_bootstrap_seed: 360038
+  dominant_probability_threshold: 0.8
+  dominant_action: choose_anchor_oof_mean_loss_winner
+  ambiguous_action: bootstrap_best_probability_weighted_average_of_all_families
+  forced_baseline_inclusion: false
+  probability_smoothing: none
+  selection_is_condition_specific: true
+  heldout_outcomes_used_once_after_selection: true
+evaluation:
+  primary_estimand: selector_regret_relative_to_best_fixed_family_on_same_heldout_condition
+  primary_regret_definition: mean_selector_loss_divided_by_minimum_family_mean_loss_minus_one
+  primary_bootstrap_oracle: recompute_best_fixed_family_inside_each_target_bootstrap
+  bootstrap_repetitions: 20000
+  bootstrap_seed: 360039
+  maximum_regret_ci_upper: 0.02
+  primary_success_rule: all_three_conditions_selector_oracle_regret_upper_ci_at_most_0.02
+  required_conditions:
+  - Rest
+  - Stim8hr
+  - Stim48hr
+  secondary_comparisons:
+  - selector_vs_scalar
+  - residual_program_vs_low_rank
+  sign_flip_repetitions: 100000
+  sign_flip_seed: 360040
+  secondary_multiple_testing: holm_across_six_condition_by_comparison_tests
+  secondary_gene_scopes:
+  - top100
+  - top500
+  - all
+  inferential_unit: heldout_perturbation_target_within_condition
+outputs:
+  pre_numeric_manifest: docs/provenance/cd4t_confirmation/pre_numeric_manifest.json
+  anchor_oof_metrics: results/reproduced/cd4t_confirmation/anchor_oof_metrics.csv
+  heldout_metrics: results/reproduced/cd4t_confirmation/heldout_metrics.csv
+  bootstrap_regret: results/reproduced/cd4t_confirmation/bootstrap_regret.csv
+  summary_json: results/reproduced/cd4t_confirmation/cd4t_prospective_summary.json
+  summary_markdown: results/reproduced/cd4t_confirmation/cd4t_prospective_summary.md
+  output_audit: results/reproduced/cd4t_confirmation/cd4t_output_audit.json
+claim_boundary:
+  strict_predownload_minimum_1100_failed_and_is_reported: true
+  analysis_continued_only_under_outcome_blind_sample_size_adaptation: true
+  not_labeled_as_untouched_preregistered_confirmation: true
+  one_external_study_not_three_independent_studies: true
+  four_donors_are_nested_within_target_study: true
+  target_bootstrap_quantifies_within_condition_target_stability_only: true
+  source_K562_to_primary_CD4T_is_cross_cell_context_and_cross_study: true
+  low_rank_is_operational_mapping_not_proven_measurement_quality: true
+  residual_program_is_operational_structure_not_proven_pure_biology: true
+  v37_replicate_protocol_is_required_for_stronger_biology_quality_separation: true
+references:
+- Zhu et al. Cell 2026. doi:10.1016/j.cell.2026.08.002
+- Virtual Cells Platform Primary Human CD4+ T Cell Perturb-seq v1.0
+- Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065
+repository_reorganization:
+  classification: post_result_organizational_refactor_not_new_preregistration
+  original_protocol: docs/provenance/cd4t_confirmation/original_protocol.yaml
+  historical_records_preserved_without_edits: true
+  reference_results_are_immutable: true

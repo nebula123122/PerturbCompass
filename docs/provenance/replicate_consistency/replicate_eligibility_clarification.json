@@ -1,0 +1,15 @@
+{
+  "status": "V37_PRE_DOWNLOAD_ELIGIBILITY_CLARIFICATION",
+  "recorded_on": "2026-10-28",
+  "timing": "before_donor_or_guide_artifact_download",
+  "reason": "The pre-download protocol said donor consensus used available modalities while also requiring five of six directions; this amendment removes that ambiguity before outcome access.",
+  "locked_interpretation": {
+    "guide_primary_eligibility": "heldout target-condition is present in both guide_1 and guide_2",
+    "donor_primary_eligibility": "heldout target-condition is present in all six donor-pair modalities",
+    "guide_minimum_per_condition": 400,
+    "donor_minimum_per_condition": 700,
+    "no_threshold_relaxation_after_numeric_access": true
+  },
+  "replicate_outcomes_read": false,
+  "statistical_model_changed": false
+}

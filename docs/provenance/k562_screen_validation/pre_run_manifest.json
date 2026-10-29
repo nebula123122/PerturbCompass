@@ -1,0 +1,12 @@
+{
+  "status": "FROZEN_BEFORE_V30_NUMERIC_RUN",
+  "frozen_at_utc": "2026-10-27T04:56:09.855049+00:00",
+  "config_sha256": "d2dd1fdbd5877c5191d09b2d578e05a70083dbdb6e34cc941f142e67d017424c",
+  "runner_sha256": "4c0ac7ab2960159e017fbd1c944d94a01130ff59353a6689cd85c784d74e16fd",
+  "parent_v29_summary_sha256": "d569526e703aab6a73ba1b9ec73f262505b7ac509ba4f9c30b1a63496c843fa6",
+  "source_sha256": "c1ca6456c9c9f1aa2b02c496eb64d1dc3e6a852edbd744d682b8d2c95fd36829",
+  "source_md5": "30496767641cd2e660ee6ecb5baee132",
+  "target_sha256": "37e48c474d8b5dead4151f96ea8f5fe7bbe6beb10eeea48685b740c3f74490a2",
+  "target_md5": "a3dfaa94ea8724217f5ecb1e14a5f0c8",
+  "outcome_history_note": "The target screen was used in earlier development versions. This freeze is before the predeclared V30 numeric run, not before first-ever target-outcome access."
+}

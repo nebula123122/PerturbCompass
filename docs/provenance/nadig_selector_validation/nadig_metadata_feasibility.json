@@ -1,0 +1,71 @@
+{
+  "stage": "V35 metadata-only feasibility and partition freeze",
+  "target_expression_values_read": false,
+  "source": {
+    "path": "data/raw/v26_k562_gwps/K562_essential_normalized_bulk_01.h5ad",
+    "target_count": 2050,
+    "measured_gene_count": 8561
+  },
+  "screens": {
+    "hepg2": {
+      "path": "data/raw/v35_nadig/nadig25hepg2_processed_complete.h5ad",
+      "shape": [
+        133757,
+        9623
+      ],
+      "size_bytes": 1236448196,
+      "md5": "02681165b34557059b398959208f322f",
+      "sha256": "b25cd23e74b94c0fec44a00b8bdfd21673ad391068df56da9cf81f38bc692221",
+      "obs_columns": [
+        "perturbation"
+      ],
+      "var_columns": [],
+      "target_column": "perturbation",
+      "control_cells": 4976,
+      "invalid_cells": 0,
+      "combination_cells": 0,
+      "single_gene_targets": 1818,
+      "target_cell_count_min": 30,
+      "target_cell_count_median": 55.0,
+      "target_cell_count_max": 1213,
+      "measured_gene_count": 9623,
+      "target_expression_values_read": false
+    },
+    "jurkat": {
+      "path": "data/raw/v35_nadig/nadig25jurkat_processed_complete.h5ad",
+      "shape": [
+        258202,
+        8881
+      ],
+      "size_bytes": 2004474709,
+      "md5": "da5a6bba8ab2a9bb7ef610110107006e",
+      "sha256": "eaad2b2c58ed76d4d3e14c08f0d1602cff3e28445833d4885dd38029ac956ee8",
+      "obs_columns": [
+        "perturbation"
+      ],
+      "var_columns": [],
+      "target_column": "perturbation",
+      "control_cells": 12013,
+      "invalid_cells": 0,
+      "combination_cells": 0,
+      "single_gene_targets": 2137,
+      "target_cell_count_min": 30,
+      "target_cell_count_median": 89.0,
+      "target_cell_count_max": 2555,
+      "measured_gene_count": 8881,
+      "target_expression_values_read": false
+    }
+  },
+  "shared_measured_genes": 7084,
+  "shared_eligible_targets": 1260,
+  "anchor_targets": 256,
+  "heldout_targets": 1004,
+  "partition_sha256": "ba8af2ddb9b1952a6ec720afe2638989990acd00035b6a135d48e84b7730b68b",
+  "eligible_targets_sha256": "6d285cf2bf5c17d0bb6b37222c818d9347f54ad9470c5af0338a5b151479a6ce",
+  "claim_boundary": {
+    "only_obs_var_shape_and_file_hashes_read_from_targets": true,
+    "target_X_layers_raw_and_numeric_expression_unread": true,
+    "partition_depends_only_on_target_labels_cell_counts_and_source_statistics": true,
+    "partition_common_across_hepg2_and_jurkat": true
+  }
+}

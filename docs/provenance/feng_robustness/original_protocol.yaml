@@ -1,0 +1,30 @@
+stage: V32 exploratory robustness and heterogeneity analysis of V31
+analysis_status: post_v31_exploratory
+input:
+  record_metrics: data/derived/v31_feng/v31_record_metrics.csv
+  v31_summary: docs/audit/v31_feng_external_summary.json
+analysis:
+  candidate: residual_program
+  primary_comparator: low_rank
+  secondary_comparator: gene_ridge
+  direct_program_comparators:
+    - residual_program
+    - low_rank
+    - gene_ridge
+    - scalar
+  metric_scope: top200
+  trim_fraction: 0.10
+  influence_removals: [1, 3, 5]
+  correlation_permutations: 50000
+  correlation_seed: 320031
+  heterogeneity_features:
+    - source_cells
+    - source_effect_rms
+    - residual_beta_mean
+    - residual_beta_sd
+outputs:
+  summary_json: docs/audit/v32_v31_robustness_summary.json
+  summary_md: docs/audit/v32_v31_robustness_summary.md
+  subgroup_csv: data/derived/v32_v31_robustness/v32_subgroup_metrics.csv
+  influence_csv: data/derived/v32_v31_robustness/v32_influence_metrics.csv
+  correlation_csv: data/derived/v32_v31_robustness/v32_correlation_metrics.csv

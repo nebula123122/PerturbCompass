@@ -1,0 +1,336 @@
+{
+  "status": "PASS",
+  "passed": 51,
+  "total": 51,
+  "checks": [
+    {
+      "name": "pre_download_status",
+      "passed": true,
+      "detail": "FROZEN_BEFORE_V31_TARGET_OUTCOME_DOWNLOAD"
+    },
+    {
+      "name": "pre_run_status",
+      "passed": true,
+      "detail": "FROZEN_BEFORE_V31_NUMERIC_TARGET_ACCESS"
+    },
+    {
+      "name": "config_hash",
+      "passed": true,
+      "detail": "f7b9ec4c228c5471bf28730cadceb9685b6b888a1ad625a690b70ba4763db695"
+    },
+    {
+      "name": "runner_hash",
+      "passed": true,
+      "detail": "0703c1ebd81c9fbd65404773297147f2a7ddd71d03303bef7b665582a0c02789"
+    },
+    {
+      "name": "target_hash",
+      "passed": true,
+      "detail": "4e963e6806995b448854636b131072ee23abd4af127068d03fb4ea07240dede0"
+    },
+    {
+      "name": "numeric_blinding",
+      "passed": true,
+      "detail": {
+        "pre": false,
+        "manifest": false
+      }
+    },
+    {
+      "name": "metadata_selection_reason",
+      "passed": true,
+      "detail": "explicit controls insufficient in metadata: 36 fitness and 12 nonfitness"
+    },
+    {
+      "name": "output_hash_record_metrics",
+      "passed": true,
+      "detail": "record_metrics"
+    },
+    {
+      "name": "output_hash_random_program_metrics",
+      "passed": true,
+      "detail": "random_program_metrics"
+    },
+    {
+      "name": "output_hash_bootstrap_metrics",
+      "passed": true,
+      "detail": "bootstrap_metrics"
+    },
+    {
+      "name": "output_hash_sign_flip_metrics",
+      "passed": true,
+      "detail": "sign_flip_metrics"
+    },
+    {
+      "name": "metric_columns",
+      "passed": true,
+      "detail": [
+        "low_rank_mse_top100",
+        "low_rank_mse_top200",
+        "low_rank_mse_top500",
+        "low_rank_mse_all",
+        "gene_ridge_mse_top100",
+        "gene_ridge_mse_top200",
+        "gene_ridge_mse_top500",
+        "gene_ridge_mse_all",
+        "direct_program_mse_top100",
+        "direct_program_mse_top200",
+        "direct_program_mse_top500",
+        "direct_program_mse_all",
+        "scalar_mse_top100",
+        "scalar_mse_top200",
+        "scalar_mse_top500",
+        "scalar_mse_all",
+        "residual_program_mse_top100",
+        "residual_program_mse_top200",
+        "residual_program_mse_top500",
+        "residual_program_mse_all"
+      ]
+    },
+    {
+      "name": "finite_metrics",
+      "passed": true,
+      "detail": [
+        68,
+        28
+      ]
+    },
+    {
+      "name": "nonnegative_metrics",
+      "passed": true,
+      "detail": [
+        68,
+        28
+      ]
+    },
+    {
+      "name": "heldout_count",
+      "passed": true,
+      "detail": 68
+    },
+    {
+      "name": "unique_targets",
+      "passed": true,
+      "detail": 68
+    },
+    {
+      "name": "all_test_role",
+      "passed": true,
+      "detail": [
+        "test"
+      ]
+    },
+    {
+      "name": "exact_frozen_test_set",
+      "passed": true,
+      "detail": 68
+    },
+    {
+      "name": "improvement_low_rank",
+      "passed": true,
+      "detail": 0.09155657363952041
+    },
+    {
+      "name": "fraction_low_rank",
+      "passed": true,
+      "detail": 0.8382352941176471
+    },
+    {
+      "name": "bootstrap_count_low_rank",
+      "passed": true,
+      "detail": 20000
+    },
+    {
+      "name": "bootstrap_ci_low_rank",
+      "passed": true,
+      "detail": [
+        0.06633525099679767,
+        0.12082177155316214
+      ]
+    },
+    {
+      "name": "sign_count_low_rank",
+      "passed": true,
+      "detail": 100000
+    },
+    {
+      "name": "sign_p_low_rank",
+      "passed": true,
+      "detail": 9.99990000099999e-06
+    },
+    {
+      "name": "improvement_gene_ridge",
+      "passed": true,
+      "detail": 0.09456916720355812
+    },
+    {
+      "name": "fraction_gene_ridge",
+      "passed": true,
+      "detail": 0.8235294117647058
+    },
+    {
+      "name": "bootstrap_count_gene_ridge",
+      "passed": true,
+      "detail": 20000
+    },
+    {
+      "name": "bootstrap_ci_gene_ridge",
+      "passed": true,
+      "detail": [
+        0.06605116754764868,
+        0.12961998170986916
+      ]
+    },
+    {
+      "name": "sign_count_gene_ridge",
+      "passed": true,
+      "detail": 100000
+    },
+    {
+      "name": "sign_p_gene_ridge",
+      "passed": true,
+      "detail": 9.99990000099999e-06
+    },
+    {
+      "name": "improvement_direct_program",
+      "passed": true,
+      "detail": -0.20798290423259425
+    },
+    {
+      "name": "fraction_direct_program",
+      "passed": true,
+      "detail": 0.35294117647058826
+    },
+    {
+      "name": "bootstrap_count_direct_program",
+      "passed": true,
+      "detail": 20000
+    },
+    {
+      "name": "bootstrap_ci_direct_program",
+      "passed": true,
+      "detail": [
+        -0.297025432521289,
+        -0.1156271481298347
+      ]
+    },
+    {
+      "name": "sign_count_direct_program",
+      "passed": true,
+      "detail": 100000
+    },
+    {
+      "name": "sign_p_direct_program",
+      "passed": true,
+      "detail": 0.999990000099999
+    },
+    {
+      "name": "improvement_scalar",
+      "passed": true,
+      "detail": -0.09266032953692016
+    },
+    {
+      "name": "fraction_scalar",
+      "passed": true,
+      "detail": 0.5147058823529411
+    },
+    {
+      "name": "bootstrap_count_scalar",
+      "passed": true,
+      "detail": 20000
+    },
+    {
+      "name": "bootstrap_ci_scalar",
+      "passed": true,
+      "detail": [
+        -0.20411287316834334,
+        0.019801037795734108
+      ]
+    },
+    {
+      "name": "sign_count_scalar",
+      "passed": true,
+      "detail": 100000
+    },
+    {
+      "name": "sign_p_scalar",
+      "passed": true,
+      "detail": 0.9211007889921101
+    },
+    {
+      "name": "primary_no_adjustment",
+      "passed": true,
+      "detail": "single_predeclared_primary_none"
+    },
+    {
+      "name": "secondary_holm",
+      "passed": true,
+      "detail": [
+        2.999970000299997e-05,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "random_count",
+      "passed": true,
+      "detail": 100
+    },
+    {
+      "name": "random_p",
+      "passed": true,
+      "detail": 0.009900990099009901
+    },
+    {
+      "name": "secondary_gene_sets",
+      "passed": true,
+      "detail": {
+        "top100": 0.11035526205789947,
+        "top500": 0.06496036411124961,
+        "all": 0.01451317210487546
+      }
+    },
+    {
+      "name": "replication_gates",
+      "passed": true,
+      "detail": {
+        "minimum_improvement": true,
+        "bootstrap_ci": true,
+        "sign_flip": true,
+        "target_fraction": true,
+        "secondary_gene_sets": true,
+        "random_program": true
+      }
+    },
+    {
+      "name": "publication_gates",
+      "passed": true,
+      "detail": {
+        "replication": true,
+        "gene_ridge_point_noninferiority": true,
+        "gene_ridge_ci_noninferiority": true
+      }
+    },
+    {
+      "name": "status_consistency",
+      "passed": true,
+      "detail": "V31_EXTERNAL_REPLICATION_AND_GENE_RIDGE_NONINFERIOR"
+    },
+    {
+      "name": "claim_boundary",
+      "passed": true,
+      "detail": {
+        "target_screen_expression_values_were_unopened_before_v31_protocol_freeze": true,
+        "pooled_author_lfc_is_used_as_external_truth": true,
+        "target_set_was_selected_by_authors_after_their_internal_genome_wide_screen": true,
+        "independent_screen_is_the_generalization_unit": true,
+        "heldout_targets_do_not_create_multiple_independent_screens": true,
+        "task_level_inference_only_describes_within_screen_stability": true,
+        "one_external_screen_cannot_estimate_between_screen_variance": true,
+        "low_rank_is_operational_nuisance_mapping_not_proven_measurement_quality": true,
+        "residual_program_is_operational_structured_residual_not_proven_pure_biology": true,
+        "raw_count_reconstruction_remains_a_sensitivity_analysis": true
+      }
+    }
+  ]
+}

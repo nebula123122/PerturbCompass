@@ -1,0 +1,14 @@
+{
+  "status": "V36_SOURCE_ONLY_TARGET_PROGRAM_COMPATIBILITY_FROZEN_BEFORE_NUMERIC_OUTCOME_ACCESS",
+  "frozen_at_utc": "2026-10-28T04:32:30.095103+00:00",
+  "numeric_target_outcome_values_read_before_rule_selection": false,
+  "v36_outcome_files_absent_at_freeze": true,
+  "failure": "52 frozen perturbation targets were not members of the 6851-gene common expression universe used to define gene programs",
+  "frozen_fallback": "for each missing target, assign the gene program with maximum mean squared source-effect energy; retain direct gene membership for all other targets",
+  "uses_target_outcomes": false,
+  "eligibility_partition_models_hyperparameters_and_thresholds_changed": false,
+  "diagnostic_sha256": "15116c1f4e620d25085790b984ba9ee2a70d2d9bc0c15f003256250757699970",
+  "old_runner_sha256": "9103cf91d97a1c23a0471ab5964681d627d74b5bbd0b7ea81e00d14121071546",
+  "new_runner_sha256": "842620459d4b4d4aa2032c7d269a70d78c868471daadaf376d3139b6566412e8",
+  "new_tests_sha256": "24e71d18f6ceb68da01cbd686145749d687b098ecfb4b596cead253b79759f5f"
+}

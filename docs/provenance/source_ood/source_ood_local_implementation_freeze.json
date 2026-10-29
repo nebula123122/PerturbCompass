@@ -1,0 +1,13 @@
+{
+  "status": "V38_IMPLEMENTATION_HASHED_LOCALLY_BEFORE_AGENT_VIEWED_V36_RESULTS",
+  "recorded_on": "2026-10-28",
+  "target_outcomes_or_v36_summary_viewed_by_agent": false,
+  "files": {
+    "configs/v38_source_defined_ood_predesign.yaml": "2b1e2bba0fbf252c4ec7ab3a1b8b4c2ccad7809ead1fb7027cba5f7d6add36ef",
+    "scripts/prepare_v38_source_clusters.py": "44f32171975997c55b2839c54f238a73686b7070cc6637fc88088e1ca3eb85f8",
+    "scripts/seal_v38_source_ood_run.py": "f5f51737ec5b0c99f5e93c5f02e7fce331d2b7fc307abf42d1c4a0c5da92e2d3",
+    "scripts/run_v38_source_ood_sensitivity.py": "c0bc050dfe267e450994e2156988122515aa483668469f328b00e75adf16551e",
+    "tests/test_v38_source_ood_sensitivity.py": "544972611276bf8192a79b01ddfd492ba22a20027f00a634956f0b3b28b7eb9f"
+  },
+  "note": "Server deployment may occur later because SSH approval review was temporarily unavailable; this record preserves the pre-result local implementation state."
+}

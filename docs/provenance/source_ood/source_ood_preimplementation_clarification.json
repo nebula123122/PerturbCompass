@@ -1,0 +1,14 @@
+{
+  "status": "V38_PREIMPLEMENTATION_SOURCE_GEOMETRY_CLARIFICATION",
+  "recorded_on": "2026-10-28",
+  "timing": "before_the_agent_viewed_any_V36_target_outcome_or_summary",
+  "clarification": {
+    "svd_input": "target_by_common_gene K562 source-effect matrix",
+    "svd_output": "32-dimensional target embedding",
+    "row_standardization": "L2 normalization of each target embedding row before KMeans",
+    "cluster_labels": "deterministically relabeled by ascending cluster centroid first principal coordinate, then original label",
+    "bootstrap": "resample heldout targets independently within each of the eight fixed clusters, preserving each cluster sample size"
+  },
+  "target_outcomes_read_by_agent_when_recorded": false,
+  "thresholds_changed": false
+}

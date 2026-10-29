@@ -1,0 +1,45 @@
+{
+  "status": "FROZEN_BEFORE_V37_REPLICATE_NUMERIC_ACCESS",
+  "frozen_at_utc": "2026-10-28T05:59:01.322076+00:00",
+  "replicate_outcome_layers_read": false,
+  "config_sha256": "3f0ec81e4f8685571c2a774db618d4d43672a451f50abbb50436b4aa38106387",
+  "runner_sha256": "e8788273c7f579b5db179a92246b8ff937b5c7f63a9dee44397bd9058ba77d5f",
+  "tests_sha256": "35cb2db2b6f148333ade7509a21b65ef70e7a5340a3087728dd186b59e673fa2",
+  "metadata_report_sha256": "842d7cf6294d2f1548a3b12fbfe2080d0ad2f7a161c21749c3069ff92644d0c6",
+  "eligibility_sha256": "dd82bffd96364e89207690e3bd8cff11478c070682b2af505b1925155d7e924b",
+  "v36_config_sha256": "e09fbd05221e577a98d532b19c24717faf89e6bd91ffddad92e42437be2629a2",
+  "guide_sha256": "964eeafb3356a7322a1d5b1121802c6a1433456f3591e2d5797817df3bf9c2f6",
+  "donor_sha256": "2ee3cf90925600eb044619021da2bdd47d661f306a204586652256facf17af64",
+  "v36_pre_numeric_manifest_sha256": "76547c744f5c809dc0a7fc3de9d1b35d11005a3a213eafa1a3cf16a9334fa916",
+  "locked_model": {
+    "candidate": "residual_program",
+    "structural_reference": "low_rank",
+    "baseline_reference": "scalar",
+    "training_truth": "pooled_v36_anchor_log_fc_only",
+    "evaluation_truth": "heldout_replicate_log_fc_only",
+    "primary_gene_scope": "source_top200_per_target",
+    "prediction_refitting_on_replicate_data": "forbidden",
+    "heldout_target_use_for_model_selection": "forbidden"
+  },
+  "locked_estimands": {
+    "target_level_difference": "reference_mse_minus_candidate_mse",
+    "guide_consensus": "mean_difference_across_guide_1_and_guide_2_within_target_condition",
+    "donor_pair_consensus": "mean_difference_across_available_two_donor_modalities_within_target_condition",
+    "replicate_direction_requirement": {
+      "guides": "both_guide_modalities_positive_point_estimate",
+      "donors": "at_least_five_of_six_donor_pair_modalities_positive_point_estimate"
+    },
+    "uncertainty": {
+      "unit": "heldout_perturbation_target_within_condition",
+      "bootstrap_repetitions": 20000,
+      "seed": 370041,
+      "interval": "percentile_95"
+    },
+    "multiplicity": "holm_across_six_context_by_replicate_type_primary_tests"
+  },
+  "locked_success_rule": {
+    "description": "in_each_of_three_conditions_both_guide_and_donor_consensus_improvement_CI_lower_bound_above_zero_and_direction_requirement_met",
+    "intersection_union_across_conditions": true,
+    "no_combining_conditions_as_independent_studies": true
+  }
+}

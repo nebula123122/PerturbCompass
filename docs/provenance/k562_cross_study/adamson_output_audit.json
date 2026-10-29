@@ -1,0 +1,462 @@
+{
+  "status": "PASS",
+  "passed": 40,
+  "total": 40,
+  "checks": [
+    {
+      "name": "manifest_status",
+      "passed": true,
+      "detail": "FROZEN_BEFORE_V28_TARGET_EXPRESSION_ACCESS"
+    },
+    {
+      "name": "hash_record_metrics",
+      "passed": true,
+      "detail": "/mnt2/neugj/wly/PerturbCompass/data/derived/v28_adamson/v28_record_metrics.csv"
+    },
+    {
+      "name": "hash_bootstrap_metrics",
+      "passed": true,
+      "detail": "/mnt2/neugj/wly/PerturbCompass/data/derived/v28_adamson/v28_bootstrap_metrics.csv"
+    },
+    {
+      "name": "hash_sign_flip_metrics",
+      "passed": true,
+      "detail": "/mnt2/neugj/wly/PerturbCompass/data/derived/v28_adamson/v28_sign_flip_metrics.csv"
+    },
+    {
+      "name": "hash_random_program_metrics",
+      "passed": true,
+      "detail": "/mnt2/neugj/wly/PerturbCompass/data/derived/v28_adamson/v28_random_program_metrics.csv"
+    },
+    {
+      "name": "metric_columns",
+      "passed": true,
+      "detail": [
+        "identity_mse_top100",
+        "identity_mse_top200",
+        "identity_mse_top500",
+        "identity_mse_all",
+        "global_mse_top100",
+        "global_mse_top200",
+        "global_mse_top500",
+        "global_mse_all",
+        "scalar_mse_top100",
+        "scalar_mse_top200",
+        "scalar_mse_top500",
+        "scalar_mse_all",
+        "program_mse_top100",
+        "program_mse_top200",
+        "program_mse_top500",
+        "program_mse_all",
+        "gene_ridge_mse_top100",
+        "gene_ridge_mse_top200",
+        "gene_ridge_mse_top500",
+        "gene_ridge_mse_all",
+        "low_rank_mse_top100",
+        "low_rank_mse_top200",
+        "low_rank_mse_top500",
+        "low_rank_mse_all"
+      ]
+    },
+    {
+      "name": "finite_metrics",
+      "passed": true,
+      "detail": [
+        121,
+        34
+      ]
+    },
+    {
+      "name": "nonnegative_metrics",
+      "passed": true,
+      "detail": [
+        121,
+        34
+      ]
+    },
+    {
+      "name": "unique_source_target",
+      "passed": true,
+      "detail": 121
+    },
+    {
+      "name": "five_outer_folds",
+      "passed": true,
+      "detail": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "both_sources",
+      "passed": true,
+      "detail": [
+        "essential",
+        "gwps"
+      ]
+    },
+    {
+      "name": "target_count_essential",
+      "passed": true,
+      "detail": 57
+    },
+    {
+      "name": "minimum_target_count_essential",
+      "passed": true,
+      "detail": 57
+    },
+    {
+      "name": "control_folds_essential",
+      "passed": true,
+      "detail": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ]
+    },
+    {
+      "name": "control_test_partition_essential",
+      "passed": true,
+      "detail": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ]
+    },
+    {
+      "name": "control_train_test_disjoint_arithmetic_essential",
+      "passed": true,
+      "detail": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ]
+    },
+    {
+      "name": "random_partition_count_essential",
+      "passed": true,
+      "detail": 50
+    },
+    {
+      "name": "random_exact_p_essential",
+      "passed": true,
+      "detail": 0.0196078431372549
+    },
+    {
+      "name": "ranking_sorted_essential",
+      "passed": true,
+      "detail": [
+        {
+          "method": "low_rank",
+          "mean_mse_top200": 0.013436262644909061
+        },
+        {
+          "method": "gene_ridge",
+          "mean_mse_top200": 0.014036155973591145
+        },
+        {
+          "method": "program",
+          "mean_mse_top200": 0.015120262295891336
+        },
+        {
+          "method": "scalar",
+          "mean_mse_top200": 0.01596376970362624
+        },
+        {
+          "method": "global",
+          "mean_mse_top200": 0.016153505750065834
+        },
+        {
+          "method": "identity",
+          "mean_mse_top200": 0.5412466205787241
+        }
+      ]
+    },
+    {
+      "name": "target_count_gwps",
+      "passed": true,
+      "detail": 64
+    },
+    {
+      "name": "minimum_target_count_gwps",
+      "passed": true,
+      "detail": 64
+    },
+    {
+      "name": "control_folds_gwps",
+      "passed": true,
+      "detail": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ]
+    },
+    {
+      "name": "control_test_partition_gwps",
+      "passed": true,
+      "detail": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ]
+    },
+    {
+      "name": "control_train_test_disjoint_arithmetic_gwps",
+      "passed": true,
+      "detail": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ]
+    },
+    {
+      "name": "random_partition_count_gwps",
+      "passed": true,
+      "detail": 50
+    },
+    {
+      "name": "random_exact_p_gwps",
+      "passed": true,
+      "detail": 0.0196078431372549
+    },
+    {
+      "name": "ranking_sorted_gwps",
+      "passed": true,
+      "detail": [
+        {
+          "method": "low_rank",
+          "mean_mse_top200": 0.013013707663958485
+        },
+        {
+          "method": "gene_ridge",
+          "mean_mse_top200": 0.013622439899309969
+        },
+        {
+          "method": "program",
+          "mean_mse_top200": 0.014024173247488003
+        },
+        {
+          "method": "global",
+          "mean_mse_top200": 0.015275689422196592
+        },
+        {
+          "method": "scalar",
+          "mean_mse_top200": 0.015939874118003104
+        },
+        {
+          "method": "identity",
+          "mean_mse_top200": 0.4379988437576685
+        }
+      ]
+    },
+    {
+      "name": "improvement_essential_identity",
+      "passed": true,
+      "detail": 0.9720640060907465
+    },
+    {
+      "name": "improvement_essential_global",
+      "passed": true,
+      "detail": 0.06396403790986949
+    },
+    {
+      "name": "improvement_essential_scalar",
+      "passed": true,
+      "detail": 0.05283886095796686
+    },
+    {
+      "name": "improvement_essential_gene_ridge",
+      "passed": true,
+      "detail": -0.07723669673804756
+    },
+    {
+      "name": "improvement_essential_low_rank",
+      "passed": true,
+      "detail": -0.12533244515135622
+    },
+    {
+      "name": "improvement_gwps_identity",
+      "passed": true,
+      "detail": 0.9679812550937986
+    },
+    {
+      "name": "improvement_gwps_global",
+      "passed": true,
+      "detail": 0.0819286213616035
+    },
+    {
+      "name": "improvement_gwps_scalar",
+      "passed": true,
+      "detail": 0.12018293597133478
+    },
+    {
+      "name": "improvement_gwps_gene_ridge",
+      "passed": true,
+      "detail": -0.029490557576134835
+    },
+    {
+      "name": "improvement_gwps_low_rank",
+      "passed": true,
+      "detail": -0.07764624883406679
+    },
+    {
+      "name": "all_gates_boolean",
+      "passed": true,
+      "detail": {
+        "minimum_targets": true,
+        "improvement": true,
+        "bootstrap_ci": true,
+        "holm_sign_flip": false,
+        "target_fraction": true,
+        "secondary_gene_sets": true,
+        "random_program": true,
+        "sensitivity_source": true
+      }
+    },
+    {
+      "name": "core_status_consistency",
+      "passed": true,
+      "detail": "CROSS_STUDY_CORE_NOT_CONFIRMED"
+    },
+    {
+      "name": "publication_status_consistency",
+      "passed": true,
+      "detail": "PUBLICATION_SUPERIORITY_NOT_CONFIRMED"
+    }
+  ]
+}

@@ -1,0 +1,388 @@
+#!/usr/bin/env python3
+"""Evaluate frozen pooled-anchor predictions against guide and donor-pair replicates."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import anndata as ad
+import h5py
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.cluster import KMeans
+from sklearn.decomposition import TruncatedSVD
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "configs/v37_replicate_separation_frozen.yaml"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+V28 = load_module("v28_v37", ROOT / "scripts/run_v28_adamson_cross_study.py")
+V33 = load_module("v33_v37", ROOT / "scripts/run_v33_anchor_family_selector.py")
+V35 = load_module("v35_v37", ROOT / "scripts/run_v35_nadig_prospective_selector.py")
+V36 = load_module("v36_v37", ROOT / "scripts/run_v36_cd4t_prospective_selector.py")
+META = load_module("meta_v37", ROOT / "scripts/inspect_v36_cd4t_metadata.py")
+
+
+def root_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path.resolve() if path.is_absolute() else (ROOT / path).resolve()
+
+
+def digest(path: Path) -> str:
+    value = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(16 * 1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def verify_seal(config_path: Path, config: dict[str, Any]) -> dict[str, Any]:
+    manifest = json.loads(root_path(config["outputs"]["pre_numeric_manifest"]).read_text(encoding="utf-8"))
+    if manifest.get("status") != "FROZEN_BEFORE_V37_REPLICATE_NUMERIC_ACCESS":
+        raise RuntimeError("V37 numeric seal missing")
+    checks = {
+        "config_sha256": digest(config_path),
+        "runner_sha256": digest(Path(__file__).resolve()),
+        "eligibility_sha256": digest(root_path(config["frozen_inputs"]["eligibility"])),
+        "guide_sha256": digest(root_path(config["target"]["guides"]["path"])),
+        "donor_sha256": digest(root_path(config["target"]["donor_pairs"]["path"])),
+    }
+    for key, observed in checks.items():
+        if manifest.get(key) != observed:
+            raise RuntimeError(f"sealed V37 {key} mismatch")
+    return manifest
+
+
+def mudata_truth(path: Path, modality: str, genes: list[str], targets: list[str], condition: str, layer: str) -> np.ndarray:
+    with h5py.File(path, "r") as handle:
+        group = handle["mod"][modality]
+        obs, var = group["obs"], group["var"]
+        obs_targets = np.asarray(META.read_frame_column(obs, "target_contrast_gene_name"), dtype=str)
+        obs_targets = np.char.upper(np.char.strip(obs_targets))
+        obs_conditions = np.asarray(META.read_frame_column(obs, "culture_condition"), dtype=str)
+        obs_conditions = np.char.strip(obs_conditions)
+        measured = META.read_frame_column(var, "gene_name") if "gene_name" in var else META.read_index(var)
+        gene_lookup = {str(value).strip().upper(): i for i, value in enumerate(measured) if str(value).strip()}
+        target_set = set(targets)
+        row_map = {str(target): i for i, target in enumerate(obs_targets) if obs_conditions[i] == condition and target in target_set}
+        missing = [target for target in targets if target not in row_map]
+        if missing:
+            raise RuntimeError(f"{path.name}/{modality}/{condition} missing frozen eligible targets: {missing[:10]}")
+        missing_genes = [gene for gene in genes if gene not in gene_lookup]
+        if missing_genes:
+            raise RuntimeError(f"{modality} missing {len(missing_genes)} common genes")
+        node = group["layers"][layer]
+        if not isinstance(node, h5py.Dataset) or node.ndim != 2:
+            raise RuntimeError(f"{modality}/{layer} is not a dense matrix")
+        rows = np.asarray([row_map[target] for target in targets], dtype=np.int64)
+        order = np.argsort(rows, kind="stable")
+        sorted_block = np.asarray(node[rows[order], :], dtype=np.float32)
+        block = np.empty_like(sorted_block)
+        block[order] = sorted_block
+        columns = np.asarray([gene_lookup[gene] for gene in genes], dtype=np.int64)
+        result = block[:, columns]
+    if not np.isfinite(result).all():
+        raise RuntimeError(f"non-finite replicate log_fc values: {modality}/{condition}")
+    return result
+
+
+def consensus_inference(candidate: np.ndarray, reference: np.ndarray, config: dict[str, Any], seed_offset: int) -> dict[str, Any]:
+    """Arrays are target by replicate; resample intact target replicate vectors."""
+    candidate_mean = candidate.mean(axis=1)
+    reference_mean = reference.mean(axis=1)
+    return V35.paired_inference(
+        candidate_mean,
+        reference_mean,
+        int(config["evaluation"]["bootstrap_repetitions"]),
+        int(config["evaluation"]["bootstrap_seed"]) + seed_offset,
+        int(config["evaluation"]["sign_flip_repetitions"]),
+        int(config["evaluation"]["sign_flip_seed"]) + seed_offset,
+    )
+
+
+def pooled_quality_frame(
+    path: Path,
+    genes: list[str],
+    targets: list[str],
+    condition: str,
+    signatures: list[np.ndarray],
+    anchors: np.ndarray,
+) -> tuple[pd.DataFrame, list[float]]:
+    """Build a predeclared reliability score using anchor-estimated transforms and cut points."""
+    with h5py.File(path, "r") as handle:
+        obs, var = handle["obs"], handle["var"]
+        obs_targets = np.asarray(META.read_frame_column(obs, "target_contrast_gene_name"), dtype=str)
+        obs_targets = np.char.upper(np.char.strip(obs_targets))
+        obs_conditions = np.asarray(META.read_frame_column(obs, "culture_condition"), dtype=str)
+        obs_conditions = np.char.strip(obs_conditions)
+        row_map = {str(target): i for i, target in enumerate(obs_targets) if obs_conditions[i] == condition and target in set(targets)}
+        rows = np.asarray([row_map[target] for target in targets], dtype=np.int64)
+        quality_columns = {}
+        for key in ("guide_correlation_all", "donor_correlation_all_mean", "n_cells_target", "n_guides"):
+            values = pd.to_numeric(pd.Series(META.read_frame_column(obs, key)), errors="coerce").to_numpy(dtype=float)
+            quality_columns[key] = values[rows]
+        measured = META.read_frame_column(var, "gene_name") if "gene_name" in var else META.read_index(var)
+        lookup = {str(value).strip().upper(): i for i, value in enumerate(measured) if str(value).strip()}
+        columns = np.asarray([lookup[gene] for gene in genes], dtype=np.int64)
+        node = handle["layers"]["lfcSE"]
+        order = np.argsort(rows, kind="stable")
+        sorted_block = np.asarray(node[rows[order], :], dtype=np.float32)
+        block = np.empty_like(sorted_block)
+        block[order] = sorted_block
+        lfcse = block[:, columns]
+    mean_lfcse = np.asarray([
+        float(np.nanmean(row[selected])) if np.isfinite(row[selected]).any() else np.nan
+        for row, selected in zip(lfcse, signatures)
+    ])
+    raw = pd.DataFrame({
+        "target": targets,
+        "guide_correlation_all": quality_columns["guide_correlation_all"],
+        "donor_correlation_all_mean": quality_columns["donor_correlation_all_mean"],
+        "log1p_n_cells_target": np.log1p(quality_columns["n_cells_target"]),
+        "log1p_n_guides": np.log1p(quality_columns["n_guides"]),
+        "negative_log1p_mean_top200_lfcSE": -np.log1p(mean_lfcse),
+    })
+    standardized = []
+    for key in raw.columns[1:]:
+        values = raw[key].to_numpy(dtype=float)
+        anchor_values = values[anchors & np.isfinite(values)]
+        if len(anchor_values) == 0:
+            raise RuntimeError(f"no finite anchor values for quality variable {key}")
+        median = float(np.median(anchor_values))
+        scale = float(np.std(anchor_values, ddof=1))
+        if not np.isfinite(scale) or scale <= 1.0e-12:
+            scale = 1.0
+        standardized.append((np.where(np.isfinite(values), values, median) - median) / scale)
+    raw["quality_score"] = np.mean(np.column_stack(standardized), axis=1)
+    cutpoints = np.quantile(raw.loc[anchors, "quality_score"], [1 / 3, 2 / 3]).tolist()
+    raw["quality_tertile"] = pd.cut(
+        raw["quality_score"], [-np.inf, cutpoints[0], cutpoints[1], np.inf], labels=["low", "middle", "high"], include_lowest=True
+    ).astype(str)
+    return raw, [float(value) for value in cutpoints]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+    config_path = args.config.resolve()
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    verify_seal(config_path, config)
+    v36_config = yaml.safe_load(root_path(config["parent"]["v36_frozen_config"]).read_text(encoding="utf-8"))
+
+    partition = pd.read_csv(root_path(config["parent"]["partition"])).sort_values("target").reset_index(drop=True)
+    partition["target"] = partition["target"].astype(str).str.upper()
+    targets = partition["target"].tolist()
+    anchors = partition["role"].eq("anchor").to_numpy()
+    heldout = partition["role"].eq("test").to_numpy()
+    heldout_indices = np.flatnonzero(heldout)
+    heldout_position = {targets[index]: pos for pos, index in enumerate(heldout_indices)}
+    eligibility = pd.read_csv(root_path(config["frozen_inputs"]["eligibility"]))
+    eligibility["target"] = eligibility["target"].astype(str).str.upper()
+
+    pooled_path = root_path(v36_config["target"]["path"])
+    with h5py.File(pooled_path, "r") as handle:
+        var = handle["var"]
+        measured = META.read_frame_column(var, "gene_name") if "gene_name" in var else META.read_index(var)
+    target_genes = {str(value).strip().upper() for value in measured if str(value).strip()}
+    source_data = ad.read_h5ad(root_path(v36_config["source"]["h5ad"]))
+    source_lookup = V28.gene_lookup(source_data)
+    genes = sorted(set(source_lookup) & target_genes)
+    source_columns = np.asarray([source_lookup[gene] for gene in genes], dtype=np.int64)
+    source_targets, source_means, source_cells, source_constructs = V28.aggregate_source(source_data, source_columns, int(v36_config["source"]["minimum_cells_per_construct"]))
+    del source_data
+    source_map = {str(target).upper(): i for i, target in enumerate(source_targets)}
+    source = np.stack([source_means[source_map[target]] for target in targets]).astype(np.float32)
+    cells = np.asarray([source_cells[source_map[target]] for target in targets], dtype=float)
+    constructs = np.asarray([source_constructs[source_map[target]] for target in targets], dtype=int)
+    source_rms = np.sqrt(np.maximum(np.mean(source * source, axis=1), 1.0e-12))
+    model = v36_config["model"]
+    components = min(32, len(targets) - 1, len(genes) - 1)
+    embedding = TruncatedSVD(n_components=components, random_state=int(model["program_seed"])).fit_transform(source.T)
+    labels = KMeans(n_clusters=int(model["program_count"]), random_state=int(model["program_seed"]), n_init=20).fit_predict(embedding)
+    target_programs, fallback_targets = V36.assign_target_programs(targets, genes, labels, source)
+    task_x = V28.task_features(source, cells, constructs)
+    signatures = V35.scope_indices(source, int(model["top_signature_genes"]))
+
+    guide_path = root_path(config["target"]["guides"]["path"])
+    donor_path = root_path(config["target"]["donor_pairs"]["path"])
+    metric_rows: list[dict[str, Any]] = []
+    consensus_rows: list[dict[str, Any]] = []
+    quality_rows: list[dict[str, Any]] = []
+    summaries: dict[str, Any] = {}
+    p_values: dict[str, float] = {}
+
+    for condition_offset, condition in enumerate(config["target"]["conditions"]):
+        pooled_truth, _ = V36.target_log_fc(pooled_path, genes, targets, str(condition), str(v36_config["target"]["effect_layer"]))
+        predictions = V33.family_predictions(source, pooled_truth, anchors, heldout, source_rms, labels, target_programs, task_x, signatures, model, 2000 + condition_offset)
+        quality_frame, quality_cutpoints = pooled_quality_frame(pooled_path, genes, targets, str(condition), signatures, anchors)
+        quality_map = quality_frame.set_index("target")
+        summaries[str(condition)] = {"quality_score_anchor_tertile_cutpoints": quality_cutpoints}
+        for type_offset, (replicate_type, path, modalities, flag) in enumerate([
+            ("guide", guide_path, config["target"]["guides"]["modalities"], "guide_both"),
+            ("donor", donor_path, config["target"]["donor_pairs"]["modalities"], "donor_all_six"),
+        ]):
+            selected_targets = eligibility.loc[eligibility["condition"].eq(condition) & eligibility[flag].astype(bool), "target"].tolist()
+            pred_rows = np.asarray([heldout_position[target] for target in selected_targets], dtype=int)
+            global_rows = np.asarray([targets.index(target) for target in selected_targets], dtype=int)
+            local_signatures = [signatures[index] for index in global_rows]
+            family_losses = {family: np.empty((len(selected_targets), len(modalities)), dtype=float) for family in ("residual_program", "low_rank", "scalar")}
+            modality_effects = {}
+            for modality_index, modality in enumerate(modalities):
+                truth = mudata_truth(path, str(modality), genes, selected_targets, str(condition), str(config["target"]["effect_layer"]))
+                for family in family_losses:
+                    family_losses[family][:, modality_index] = V35.per_target_mse(predictions[family][pred_rows], truth, local_signatures)
+                delta = family_losses["low_rank"][:, modality_index] - family_losses["residual_program"][:, modality_index]
+                modality_effects[str(modality)] = {
+                    "relative_improvement": float(1.0 - family_losses["residual_program"][:, modality_index].mean() / family_losses["low_rank"][:, modality_index].mean()),
+                    "mean_loss_reduction": float(delta.mean()),
+                    "positive": bool(delta.mean() > 0),
+                }
+                for i, target in enumerate(selected_targets):
+                    metric_rows.append({
+                        "condition": condition,
+                        "replicate_type": replicate_type,
+                        "modality": modality,
+                        "target": target,
+                        "residual_program_mse_top200": family_losses["residual_program"][i, modality_index],
+                        "low_rank_mse_top200": family_losses["low_rank"][i, modality_index],
+                        "scalar_mse_top200": family_losses["scalar"][i, modality_index],
+                        "low_rank_minus_residual": delta[i],
+                    })
+            inference = consensus_inference(family_losses["residual_program"], family_losses["low_rank"], config, 10 * condition_offset + type_offset)
+            comparison_key = f"{condition}:{replicate_type}"
+            p_values[comparison_key] = inference["sign_flip_one_sided_p"]
+            required_positive = int(config["evaluation"][f"{replicate_type}_direction_minimum_positive"])
+            direction_count = sum(value["positive"] for value in modality_effects.values())
+            summaries[str(condition)][replicate_type] = {
+                "eligible_targets": len(selected_targets),
+                "modalities": modality_effects,
+                "consensus_residual_vs_low_rank": inference,
+                "positive_modalities": int(direction_count),
+                "required_positive_modalities": required_positive,
+                "direction_requirement_passed": bool(direction_count >= required_positive),
+                "quality_tertile_diagnostic": {},
+            }
+            for tertile in ("low", "middle", "high"):
+                mask = np.asarray([quality_map.loc[target, "quality_tertile"] == tertile for target in selected_targets])
+                if not mask.any():
+                    continue
+                candidate_tertile = family_losses["residual_program"][mask].mean(axis=1)
+                reference_tertile = family_losses["low_rank"][mask].mean(axis=1)
+                summaries[str(condition)][replicate_type]["quality_tertile_diagnostic"][tertile] = {
+                    "targets": int(mask.sum()),
+                    "relative_improvement": float(1.0 - candidate_tertile.mean() / reference_tertile.mean()),
+                    "mean_loss_reduction": float(np.mean(reference_tertile - candidate_tertile)),
+                }
+            for i, target in enumerate(selected_targets):
+                consensus_rows.append({
+                    "condition": condition,
+                    "replicate_type": replicate_type,
+                    "target": target,
+                    "residual_program_consensus_mse_top200": family_losses["residual_program"][i].mean(),
+                    "low_rank_consensus_mse_top200": family_losses["low_rank"][i].mean(),
+                    "scalar_consensus_mse_top200": family_losses["scalar"][i].mean(),
+                })
+                quality_rows.append({
+                    "condition": condition,
+                    "replicate_type": replicate_type,
+                    "target": target,
+                    "quality_score": float(quality_map.loc[target, "quality_score"]),
+                    "quality_tertile": str(quality_map.loc[target, "quality_tertile"]),
+                    "residual_program_consensus_mse_top200": family_losses["residual_program"][i].mean(),
+                    "low_rank_consensus_mse_top200": family_losses["low_rank"][i].mean(),
+                    "low_rank_minus_residual": float(family_losses["low_rank"][i].mean() - family_losses["residual_program"][i].mean()),
+                })
+        del pooled_truth, predictions
+
+    adjusted = V35.holm_adjust(p_values)
+    for key, adjusted_p in adjusted.items():
+        condition, replicate_type = key.split(":")
+        result = summaries[condition][replicate_type]
+        result["consensus_residual_vs_low_rank"]["holm_adjusted_p"] = float(adjusted_p)
+        interval = result["consensus_residual_vs_low_rank"]["bootstrap_ci95"]
+        result["primary_component_passed"] = bool(
+            interval[0] > 0
+            and adjusted_p < float(config["evaluation"]["holm_alpha"])
+            and result["direction_requirement_passed"]
+        )
+    primary_pass = all(
+        summaries[str(condition)][replicate_type]["primary_component_passed"]
+        for condition in config["target"]["conditions"]
+        for replicate_type in ("guide", "donor")
+    )
+    status = "V37_REPLICATE_CONSISTENT_COMPONENT_CONFIRMED_ALL_CONTEXTS" if primary_pass else "V37_REPLICATE_CONSISTENT_COMPONENT_NOT_CONFIRMED_ALL_CONTEXTS"
+    summary = {
+        "status": status,
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "conditions": summaries,
+        "target_program_assignment": {
+            "direct_gene_membership": len(targets) - len(fallback_targets),
+            "source_effect_energy_fallback": len(fallback_targets),
+            "fallback_targets": fallback_targets,
+        },
+        "primary_joint_gate": {"rule": config["primary_success_rule"], "passed": primary_pass},
+        "claim_boundary": config["claim_boundary"],
+    }
+    paths = {key: root_path(value) for key, value in config["outputs"].items()}
+    for key in ("replicate_metrics", "consensus_metrics", "quality_diagnostics", "summary_json", "summary_markdown", "output_audit"):
+        paths[key].parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(metric_rows).to_csv(paths["replicate_metrics"], index=False)
+    pd.DataFrame(consensus_rows).to_csv(paths["consensus_metrics"], index=False)
+    pd.DataFrame(quality_rows).to_csv(paths["quality_diagnostics"], index=False)
+    paths["summary_json"].write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    lines = ["# V37 guide/供者复制一致性检验", "", f"- 状态：**{status}**", f"- 六重联合门槛：**{'通过' if primary_pass else '未通过'}**。", ""]
+    for condition, values in summaries.items():
+        lines += [f"## {condition}", ""]
+        for replicate_type in ("guide", "donor"):
+            value = values[replicate_type]
+            infer = value["consensus_residual_vs_low_rank"]
+            lines += [f"- {replicate_type}：n={value['eligible_targets']}；residual 相对 low-rank 改善 {100*infer['relative_improvement']:.3f}%（95% CI {100*infer['bootstrap_ci95'][0]:.3f}% 至 {100*infer['bootstrap_ci95'][1]:.3f}%）；正向模态 {value['positive_modalities']}/{len(value['modalities'])}；Holm p={infer['holm_adjusted_p']:.6g}。"]
+        lines.append("")
+    lines.append("复制一致性支持可重复成分，但 guide 差异包含效率/脱靶，供者对子相互重叠；因此不声称已唯一识别纯生物真值与纯测量噪声。")
+    paths["summary_markdown"].write_text("\n".join(lines) + "\n", encoding="utf-8")
+    output_files = [paths["replicate_metrics"], paths["consensus_metrics"], paths["quality_diagnostics"], paths["summary_json"], paths["summary_markdown"]]
+    expected_replicate_rows = sum(
+        int(config["feasibility_counts"][str(condition)]["guide_both"]) * len(config["target"]["guides"]["modalities"])
+        + int(config["feasibility_counts"][str(condition)]["donor_all_six"]) * len(config["target"]["donor_pairs"]["modalities"])
+        for condition in config["target"]["conditions"]
+    )
+    expected_consensus_rows = sum(
+        int(config["feasibility_counts"][str(condition)]["guide_both"])
+        + int(config["feasibility_counts"][str(condition)]["donor_all_six"])
+        for condition in config["target"]["conditions"]
+    )
+    audit = {
+        "status": "V37_OUTPUT_AUDIT_PASS",
+        "summary_status": status,
+        "replicate_metric_rows": len(metric_rows),
+        "consensus_metric_rows": len(consensus_rows),
+        "quality_diagnostic_rows": len(quality_rows),
+        "expected_replicate_metric_rows": expected_replicate_rows,
+        "expected_consensus_metric_rows": expected_consensus_rows,
+        "files": {str(path.relative_to(ROOT)).replace("\\", "/"): digest(path) for path in output_files},
+    }
+    if len(metric_rows) != expected_replicate_rows or len(consensus_rows) != expected_consensus_rows or len(quality_rows) != expected_consensus_rows:
+        raise RuntimeError("V37 output row count audit failed")
+    paths["output_audit"].write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

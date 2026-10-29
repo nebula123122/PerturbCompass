@@ -1,0 +1,713 @@
+{
+  "status": "V40_ANCHOR_BUDGET_FRONTIER_COMPLETE",
+  "generated_at_utc": "2026-10-28T07:38:32.259542+00:00",
+  "minimal_reliable_budget_by_primary_regret_rule": 32,
+  "minimal_noninferior_budget_vs_256_by_secondary_rule": 32,
+  "budget_joint_gates": {
+    "32": {
+      "primary_all_conditions": true,
+      "secondary_all_conditions": true
+    },
+    "64": {
+      "primary_all_conditions": true,
+      "secondary_all_conditions": true
+    },
+    "128": {
+      "primary_all_conditions": true,
+      "secondary_all_conditions": true
+    },
+    "256": {
+      "primary_all_conditions": true,
+      "secondary_all_conditions": true
+    }
+  },
+  "v36_full_budget_reproduction_audit": {
+    "passed": true,
+    "checked_columns": [
+      "direct_program_mse_top200",
+      "scalar_mse_top200",
+      "residual_program_mse_top200",
+      "low_rank_mse_top200",
+      "gene_ridge_mse_top200",
+      "selector_mse_top200"
+    ],
+    "maximum_absolute_difference": 9.8879238130678e-17,
+    "tolerance": {
+      "rtol": 1e-07,
+      "atol": 1e-09
+    }
+  },
+  "conditions": {
+    "Rest": {
+      "32": {
+        "anchor_targets": 32,
+        "selector": {
+          "mode": "ambiguous_probability_model_average",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.6297,
+          "anchor_mean_losses": {
+            "direct_program": 0.13641146377484561,
+            "scalar": 0.1366470232322123,
+            "residual_program": 0.14079755058798446,
+            "low_rank": 0.14117799792438745,
+            "gene_ridge": 0.1398812555737168
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.6297,
+            "scalar": 0.30665,
+            "residual_program": 0.0249,
+            "low_rank": 0.013,
+            "gene_ridge": 0.02575
+          },
+          "weights": {
+            "direct_program": 0.6297,
+            "scalar": 0.30665,
+            "residual_program": 0.0249,
+            "low_rank": 0.013,
+            "gene_ridge": 0.02575
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.11485399174859229,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.1149840873290718,
+          "scalar": 0.11581512527546733,
+          "residual_program": 0.11816705636425433,
+          "low_rank": 0.11918035781337429,
+          "gene_ridge": 0.11805275854707137
+        },
+        "selector_regret": -0.0011314224733300904,
+        "selector_regret_bootstrap_ci95": [
+          -0.0032056482550126496,
+          0.00048603641013104536
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.013585205246153809,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.011592427334421312,
+          0.0157258587589459
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "64": {
+        "anchor_targets": 64,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.99275,
+          "anchor_mean_losses": {
+            "direct_program": 0.12858771261597382,
+            "scalar": 0.13010182400906586,
+            "residual_program": 0.13258810248285757,
+            "low_rank": 0.1335109623032622,
+            "gene_ridge": 0.13212520059130176
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.99275,
+            "scalar": 0.0001,
+            "residual_program": 0.00145,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0057
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.11446789653261298,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.11446789665543619,
+          "scalar": 0.11567012757021686,
+          "residual_program": 0.11667205772752348,
+          "low_rank": 0.1179438143891772,
+          "gene_ridge": 0.11668155604942672
+        },
+        "selector_regret": -1.0729921395835618e-09,
+        "selector_regret_bootstrap_ci95": [
+          -7.123776235573587e-09,
+          4.9419927372618105e-09
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.010177919240896172,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.008102198667107286,
+          0.012319596038404601
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "128": {
+        "anchor_targets": 128,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.95725,
+          "anchor_mean_losses": {
+            "direct_program": 0.11741181493769845,
+            "scalar": 0.11862487630052299,
+            "residual_program": 0.11924061948576567,
+            "low_rank": 0.12030481874535326,
+            "gene_ridge": 0.1192058265542573
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.95725,
+            "scalar": 0.0,
+            "residual_program": 0.0224,
+            "low_rank": 0.0,
+            "gene_ridge": 0.02035
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.1144502436761389,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.11445024383005839,
+          "scalar": 0.11563997328138471,
+          "residual_program": 0.11622097952750564,
+          "low_rank": 0.11721039049941855,
+          "gene_ridge": 0.11581919185874234
+        },
+        "selector_regret": -1.3448597790954864e-09,
+        "selector_regret_bootstrap_ci95": [
+          -8.493526548747354e-09,
+          5.645497391792983e-09
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.010022132978006582,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.008000542979169255,
+          0.012091214290835633
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "256": {
+        "anchor_targets": 256,
+        "selector": {
+          "mode": "ambiguous_probability_model_average",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.7487,
+          "anchor_mean_losses": {
+            "direct_program": 0.11705321535545443,
+            "scalar": 0.11853495062251655,
+            "residual_program": 0.11762984626861465,
+            "low_rank": 0.1190248668208369,
+            "gene_ridge": 0.11768800790107371
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.7487,
+            "scalar": 0.0,
+            "residual_program": 0.1591,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0922
+          },
+          "weights": {
+            "direct_program": 0.7487,
+            "scalar": 0.0,
+            "residual_program": 0.1591,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0922
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.11331458978892602,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.11439255107351562,
+          "scalar": 0.11569418616637576,
+          "residual_program": 0.11424984310675253,
+          "low_rank": 0.11557385779187544,
+          "gene_ridge": 0.11454530607136011
+        },
+        "selector_regret": -0.008186035905122901,
+        "selector_regret_bootstrap_ci95": [
+          -0.009488319677131003,
+          -0.002225411272569589
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.0,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.0,
+          0.0
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      }
+    },
+    "Stim8hr": {
+      "32": {
+        "anchor_targets": 32,
+        "selector": {
+          "mode": "ambiguous_probability_model_average",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.5377,
+          "anchor_mean_losses": {
+            "direct_program": 0.11229715234508743,
+            "scalar": 0.1123866839014447,
+            "residual_program": 0.1149368027915308,
+            "low_rank": 0.115560106060002,
+            "gene_ridge": 0.11372021876656094
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.5377,
+            "scalar": 0.29905,
+            "residual_program": 0.0249,
+            "low_rank": 0.0005,
+            "gene_ridge": 0.13785
+          },
+          "weights": {
+            "direct_program": 0.5377000000000001,
+            "scalar": 0.29905000000000004,
+            "residual_program": 0.024900000000000002,
+            "low_rank": 0.0005000000000000001,
+            "gene_ridge": 0.13785000000000003
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.1039572964470411,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.10400133456180771,
+          "scalar": 0.10504381042222427,
+          "residual_program": 0.1072662215290363,
+          "low_rank": 0.10831241435803396,
+          "gene_ridge": 0.10767257680304139
+        },
+        "selector_regret": -0.00042343797752297796,
+        "selector_regret_bootstrap_ci95": [
+          -0.00210428180565439,
+          0.001233037686484188
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.01563174069121187,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.012569840570356544,
+          0.01942469985325474
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "64": {
+        "anchor_targets": 64,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.93355,
+          "anchor_mean_losses": {
+            "direct_program": 0.11287116260322211,
+            "scalar": 0.11403989291406832,
+            "residual_program": 0.11601784055561495,
+            "low_rank": 0.11680309662187938,
+            "gene_ridge": 0.11518065603771503
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.93355,
+            "scalar": 0.0008,
+            "residual_program": 0.00055,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0651
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.10389447650420912,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.10389447604272002,
+          "scalar": 0.10505253008118703,
+          "residual_program": 0.10560725936438167,
+          "low_rank": 0.10693079774296775,
+          "gene_ridge": 0.10618590378412493
+        },
+        "selector_regret": 4.44190217940843e-09,
+        "selector_regret_bootstrap_ci95": [
+          -1.6959506132785406e-09,
+          1.095594056033098e-08
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.015018008610163891,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.010996126463142103,
+          0.019322481424218562
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "128": {
+        "anchor_targets": 128,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.9763,
+          "anchor_mean_losses": {
+            "direct_program": 0.1019587042826445,
+            "scalar": 0.10306420991108435,
+            "residual_program": 0.10418373785227392,
+            "low_rank": 0.10534538848878583,
+            "gene_ridge": 0.10391703577114998
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.9763,
+            "scalar": 0.0,
+            "residual_program": 0.00145,
+            "low_rank": 0.0,
+            "gene_ridge": 0.02225
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.10374030806316235,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.10374030812686229,
+          "scalar": 0.1050045206483288,
+          "residual_program": 0.10498199957021447,
+          "low_rank": 0.106376337534604,
+          "gene_ridge": 0.10542075865158525
+        },
+        "selector_regret": -6.140337127646944e-10,
+        "selector_regret_bootstrap_ci95": [
+          -6.222503678987579e-09,
+          5.121395241225456e-09
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.01351182898168779,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.009912905745709188,
+          0.017565121211751276
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "256": {
+        "anchor_targets": 256,
+        "selector": {
+          "mode": "ambiguous_probability_model_average",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.651,
+          "anchor_mean_losses": {
+            "direct_program": 0.10626250079934352,
+            "scalar": 0.10782138137433045,
+            "residual_program": 0.10670228510372345,
+            "low_rank": 0.10843303003639448,
+            "gene_ridge": 0.10703998204859277
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.651,
+            "scalar": 0.0,
+            "residual_program": 0.3121,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0369
+          },
+          "weights": {
+            "direct_program": 0.651,
+            "scalar": 0.0,
+            "residual_program": 0.3121,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0369
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.10235727408075149,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.1036833699810458,
+          "scalar": 0.10507779647020234,
+          "residual_program": 0.10333077475083856,
+          "low_rank": 0.10484148842695448,
+          "gene_ridge": 0.10457564694563386
+        },
+        "selector_regret": -0.009421207500227902,
+        "selector_regret_bootstrap_ci95": [
+          -0.012029809353652434,
+          -0.004008062162720471
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.0,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.0,
+          0.0
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      }
+    },
+    "Stim48hr": {
+      "32": {
+        "anchor_targets": 32,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.9912,
+          "anchor_mean_losses": {
+            "direct_program": 0.0953469792825979,
+            "scalar": 0.09608440283161668,
+            "residual_program": 0.0995266442263553,
+            "low_rank": 0.10051063232822344,
+            "gene_ridge": 0.09901818904583669
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.9912,
+            "scalar": 0.0088,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.09136350988938483,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.09136350994639887,
+          "scalar": 0.09197001730683309,
+          "residual_program": 0.09518045335699192,
+          "low_rank": 0.09583697854205198,
+          "gene_ridge": 0.09484283826100935
+        },
+        "selector_regret": -6.240351568820302e-10,
+        "selector_regret_bootstrap_ci95": [
+          -6.5057069287277615e-09,
+          5.340243425244749e-09
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.003564513796564084,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.0009912988446533321,
+          0.006139354362299137
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "64": {
+        "anchor_targets": 64,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.87335,
+          "anchor_mean_losses": {
+            "direct_program": 0.10190642360534982,
+            "scalar": 0.10303199193182833,
+            "residual_program": 0.10365109097957759,
+            "low_rank": 0.10475502075860277,
+            "gene_ridge": 0.10361130357683228
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.87335,
+            "scalar": 0.0,
+            "residual_program": 0.0412,
+            "low_rank": 0.0,
+            "gene_ridge": 0.08545
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.09146023035510299,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.09146022971009102,
+          "scalar": 0.09194742782650026,
+          "residual_program": 0.09268250629595216,
+          "low_rank": 0.09332888493525614,
+          "gene_ridge": 0.09260469486825493
+        },
+        "selector_regret": 7.052376682636918e-09,
+        "selector_regret_bootstrap_ci95": [
+          7.934522483488139e-10,
+          1.3461659442715037e-08
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.004626920738571183,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.003120253884187685,
+          0.006431233832672294
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "128": {
+        "anchor_targets": 128,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.94925,
+          "anchor_mean_losses": {
+            "direct_program": 0.09561819769504427,
+            "scalar": 0.09656367112259152,
+            "residual_program": 0.09704266017106235,
+            "low_rank": 0.09807769082544837,
+            "gene_ridge": 0.09712769324589851
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.94925,
+            "scalar": 0.0,
+            "residual_program": 0.0345,
+            "low_rank": 0.0,
+            "gene_ridge": 0.01625
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.09122683506497403,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.0912268350894904,
+          "scalar": 0.09194335854928164,
+          "residual_program": 0.09193935252262544,
+          "low_rank": 0.09282349116101707,
+          "gene_ridge": 0.09169638481309884
+        },
+        "selector_regret": -2.68740252273858e-10,
+        "selector_regret_bootstrap_ci95": [
+          -6.451547535091251e-09,
+          0.0019167030837028305
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.0020632360558761054,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.0009117168089437522,
+          0.003208921128871228
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      },
+      "256": {
+        "anchor_targets": 256,
+        "selector": {
+          "mode": "dominant_single_family",
+          "anchor_winner": "direct_program",
+          "leading_probability": 0.82455,
+          "anchor_mean_losses": {
+            "direct_program": 0.09780325328879119,
+            "scalar": 0.09884507928232673,
+            "residual_program": 0.0982622945330772,
+            "low_rank": 0.09941977183552808,
+            "gene_ridge": 0.09883750956589636
+          },
+          "bootstrap_best_probability": {
+            "direct_program": 0.82455,
+            "scalar": 0.0,
+            "residual_program": 0.17105,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0044
+          },
+          "weights": {
+            "direct_program": 1.0,
+            "scalar": 0.0,
+            "residual_program": 0.0,
+            "low_rank": 0.0,
+            "gene_ridge": 0.0
+          },
+          "confidence_threshold": 0.8
+        },
+        "selector_mean_mse_top200": 0.09103900011744082,
+        "fixed_family_mean_mse_top200": {
+          "direct_program": 0.09103900032486655,
+          "scalar": 0.0919626055178671,
+          "residual_program": 0.0908209377559773,
+          "low_rank": 0.0917118236576159,
+          "gene_ridge": 0.09099308237553244
+        },
+        "selector_regret": 0.002401014202797702,
+        "selector_regret_bootstrap_ci95": [
+          -5.594837285127774e-09,
+          0.009915173304286649
+        ],
+        "primary_regret_gate_upper_ci_at_most_0_05": true,
+        "relative_mse_increase_vs_256": 0.0,
+        "relative_mse_increase_vs_256_bootstrap_ci95": [
+          0.0,
+          0.0
+        ],
+        "secondary_noninferiority_upper_ci_at_most_0_05": true
+      }
+    }
+  },
+  "target_program_assignment": {
+    "fallback_target_count": 52,
+    "fallback_targets": [
+      "ABCG1",
+      "ARHGAP11B",
+      "ARMC7",
+      "C16ORF86",
+      "CACNB3",
+      "CCDC78",
+      "CTBP2",
+      "CUL7",
+      "DNLZ",
+      "DPH1",
+      "F8A1",
+      "FAM229A",
+      "GSDMA",
+      "HS6ST1",
+      "IFITM3",
+      "JAZF1",
+      "KDM8",
+      "KLF7",
+      "KLHL11",
+      "LRRC37A3",
+      "LRRC37B",
+      "LTBP3",
+      "MOK",
+      "MST1",
+      "NBPF3",
+      "NDOR1",
+      "PC",
+      "PYROXD1",
+      "RHPN1",
+      "RNF103",
+      "SGPP1",
+      "SLC16A5",
+      "SLC4A5",
+      "SLC9B1",
+      "TIGD1",
+      "TREML2",
+      "TVP23C",
+      "WDR25",
+      "WDR7",
+      "YJEFN3",
+      "YPEL1",
+      "ZFP69B",
+      "ZNF133",
+      "ZNF236",
+      "ZNF253",
+      "ZNF284",
+      "ZNF492",
+      "ZNF559",
+      "ZNF658",
+      "ZNF674",
+      "ZNF687",
+      "ZNF718"
+    ]
+  },
+  "pre_numeric_manifest_sha256": "4f9fa1d638c0743b789c72acb7fc321a7015b053e2074a60dfb913e9e4ee5fcc",
+  "claim_boundary": {
+    "reuses_v36_external_study_and_heldout_targets": true,
+    "not_an_additional_independent_validation": true,
+    "supports_target_measurement_efficiency_not_wet_lab_cost_directly": true,
+    "farthest_first_is_source_space_design_not_proven_optimal_experimental_design": true,
+    "minimum_budget_is_specific_to_this_source_target_pair_and_protocol": true
+  }
+}

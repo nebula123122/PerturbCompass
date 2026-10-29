@@ -1,0 +1,40 @@
+{
+  "status": "PUBLIC_S3_INVENTORY_CAPTURED_BEFORE_DOWNLOAD",
+  "captured_on": "2026-10-28",
+  "bucket": "genome-scale-tcell-perturb-seq",
+  "prefix": "marson2025_data/",
+  "anonymous_listing": true,
+  "object_count": 57,
+  "total_bytes": 1843656060436,
+  "selected_now": [
+    {
+      "key": "marson2025_data/GWCD4i.DE_stats.h5ad",
+      "size_bytes": 16786240107,
+      "etag": "c9ff52fcc6d6ce8a387a76dc757a5b97-2002",
+      "purpose": "target-condition differential-expression effects"
+    },
+    {
+      "key": "marson2025_data/suppl_tables/DE_stats.suppl_table.csv",
+      "size_bytes": 7276533,
+      "etag": "7e97202a40cbd8981416be12daa36931",
+      "purpose": "published row-level metadata cross-check"
+    }
+  ],
+  "reserved_for_quality_decomposition": [
+    {
+      "key": "marson2025_data/GWCD4i.DE_stats.by_donors.h5mu",
+      "size_bytes": 16866278447,
+      "etag": "1f405d8c2d202c6e845c1d11e59f2e47-2011"
+    },
+    {
+      "key": "marson2025_data/GWCD4i.DE_stats.by_guide.h5mu",
+      "size_bytes": 29424424894,
+      "etag": "2e6705636ebaa276c7bc7c5a148ad096-3508"
+    }
+  ],
+  "excluded": {
+    "cell_level_objects": "More than 1.7 TB; unnecessary for the predeclared target-level test",
+    "reason": "The independent unit is the perturbation target within condition, not individual cells"
+  },
+  "claim_boundary": "The three culture conditions and four donors add one external study, not twelve independent studies."
+}

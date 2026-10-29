@@ -1,0 +1,21 @@
+{
+  "status": "V36_OUTPUT_AUDIT_PASS",
+  "summary_status": "V36_PROSPECTIVE_SELECTOR_CONFIRMED_ALL_THREE_CONTEXTS",
+  "row_counts": {
+    "anchor_oof": 768,
+    "heldout": 1455,
+    "bootstrap_regret": 60000
+  },
+  "expected_row_counts": {
+    "anchor_oof": 768,
+    "heldout": 1455,
+    "bootstrap_regret": 60000
+  },
+  "files": {
+    "data/derived/v36_cd4t/v36_anchor_oof_metrics.csv": "7adc8b967afe52a134a8c5c5e7d4afe991c828a52d31617e0a7291bb45d245ba",
+    "data/derived/v36_cd4t/v36_heldout_metrics.csv": "83179b8b45845c2e97d36aa550caefd21813015ab7b3ff1c46ef9be45a44afbf",
+    "data/derived/v36_cd4t/v36_bootstrap_regret.csv": "37e72c0bcd330e7a02739fbad0851533ce275d24ea49c1bd73f04d1fca6f2844",
+    "docs/audit/v36_cd4t_prospective_summary.json": "87e6920565e720556cfdbd518d8b36336c69d5e9e101147a53389eedcd08ef09",
+    "docs/audit/v36_cd4t_prospective_summary.md": "38c629123ca134ff55df92107c04a8323214f1f3282a020e6737ebae513b9765"
+  }
+}

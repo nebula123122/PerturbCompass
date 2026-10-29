@@ -1,0 +1,14 @@
+{
+  "status": "V40_POST_FIRST_RUN_FOLD_ORDER_AND_SEED_BUGFIX_FROZEN",
+  "frozen_at_utc": "2026-10-28T07:32:24.588058+00:00",
+  "first_run_results_were_viewed": true,
+  "first_run_valid_for_claims": false,
+  "defect": "OOF fold construction used farthest-first rank order and model/selector seeds differed from V36, so the 256-anchor control did not reproduce V36.",
+  "correction": "Sort every selected subset by the canonical V36 partition order and reuse V36 OOF, model, selector-bootstrap, and regret-bootstrap seeds for every budget.",
+  "isolation_goal": "Only anchor membership/quantity may vary across budgets.",
+  "hard_audit": "The corrected run aborts unless every 256-anchor top200 family and selector loss reproduces V36 within rtol 1e-7 and atol 1e-9.",
+  "budgets_estimands_thresholds_and_heldout_targets_changed": false,
+  "old_runner_sha256": "db33a2f017338c8b561bed686cb3de43dbe51a8606a2513cfc319c11ef30b985",
+  "new_runner_sha256": "ff6340ff369b122774f331e7f183fafc04350fe8b54b1097dbdff2dec307188f",
+  "classification": "post_first_run_implementation_correction_not_outcome_tuning"
+}

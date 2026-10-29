@@ -1,0 +1,42 @@
+from __future__ import annotations
+import hashlib
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+import numpy as np
+import pandas as pd
+from perturbcompass.runtime import ROOT, root_path, digest, verify_migrated_inputs
+from perturbcompass import transfer, programs, families, evaluation, apma, metadata
+SUMMARY = ROOT / 'results/reference/cd4t_confirmation/cd4t_prospective_summary.json'
+METRICS = ROOT / 'results/reference/cd4t_confirmation/heldout_metrics.csv'
+OUTPUT = ROOT / 'results/reproduced/fallback_sensitivity/fallback_exclusion_sensitivity_summary.json'
+MARKDOWN = ROOT / 'results/reproduced/fallback_sensitivity/fallback_exclusion_sensitivity_summary.md'
+FAMILIES = ['direct_program', 'scalar', 'residual_program', 'low_rank', 'gene_ridge']
+
+def main() -> None:
+    confirmation = json.loads(SUMMARY.read_text(encoding='utf-8'))
+    fallback = set(map(str, confirmation['target_program_assignment']['fallback_targets']))
+    frame = pd.read_csv(METRICS)
+    frame['target'] = frame['target'].astype(str).str.upper()
+    results: dict[str, Any] = {}
+    for offset, (condition, condition_frame) in enumerate(frame.groupby('condition', sort=False)):
+        kept = condition_frame.loc[~condition_frame['target'].isin(fallback)].copy()
+        removed = condition_frame.loc[condition_frame['target'].isin(fallback)].copy()
+        selector = kept['selector_mse_top200'].to_numpy(dtype=float)
+        family_matrix = np.column_stack([kept[f'{family}_mse_top200'].to_numpy(dtype=float) for family in FAMILIES])
+        _, regret, interval = evaluation.bootstrap_regret(selector, family_matrix, 20000, 390039 + offset)
+        selector_vs_scalar = evaluation.paired_inference(selector, kept['scalar_mse_top200'].to_numpy(dtype=float), 20000, 390100 + offset, 100000, 390200 + offset)
+        residual_vs_lowrank = evaluation.paired_inference(kept['residual_program_mse_top200'].to_numpy(dtype=float), kept['low_rank_mse_top200'].to_numpy(dtype=float), 20000, 390300 + offset, 100000, 390400 + offset)
+        results[str(condition)] = {'heldout_targets_original': int(len(condition_frame)), 'fallback_targets_removed': int(len(removed)), 'heldout_targets_retained': int(len(kept)), 'selector_regret': regret, 'selector_regret_bootstrap_ci95': interval, 'v36_regret_gate_upper_ci_at_most_0_02': bool(interval[1] <= 0.02), 'selector_vs_scalar': selector_vs_scalar, 'residual_program_vs_low_rank': residual_vs_lowrank, 'family_mean_mse_top200': {family: float(kept[f'{family}_mse_top200'].mean()) for family in FAMILIES}, 'selector_mean_mse_top200': float(selector.mean())}
+    joint = all((value['v36_regret_gate_upper_ci_at_most_0_02'] for value in results.values()))
+    payload = {'status': 'V39_V36_CONCLUSION_ROBUST_TO_FALLBACK_TARGET_EXCLUSION' if joint else 'V39_V36_CONCLUSION_NOT_ROBUST_TO_FALLBACK_TARGET_EXCLUSION', 'generated_at_utc': datetime.now(timezone.utc).isoformat(), 'analysis_classification': 'post_v36_outcome_exploratory_sensitivity_not_independent_confirmation', 'question': 'Does V36 retain its locked 2% regret gate after excluding all source-only target-program fallback targets?', 'joint_all_three_conditions_pass': joint, 'fallback_targets_total_eligible': len(fallback), 'fallback_targets': sorted(fallback), 'conditions': results, 'input_sha256': {'v36_summary': digest(SUMMARY), 'v36_heldout_metrics': digest(METRICS)}, 'method': {'inferential_unit': 'heldout perturbation target', 'bootstrap_repetitions': 20000, 'best_fixed_family_recomputed_inside_each_bootstrap': True, 'sign_flip_repetitions': 100000, 'success_threshold_inherited_from_v36': 0.02}, 'claim_boundary': 'Sensitivity analysis only; results were already available when this exclusion was specified.'}
+    OUTPUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    lines = ['# V39：排除回退靶点后的敏感性分析', '', f"- 状态：**{payload['status']}**", f"- 三种状态仍全部通过 V36 的 2% regret 门槛：**{('是' if joint else '否')}**。", '- 这是看到 V36 结果后做的稳健性检查，不是新的盲测。', '']
+    for condition, value in results.items():
+        ci = value['selector_regret_bootstrap_ci95']
+        lines += [f'## {condition}', '', f"- 保留 {value['heldout_targets_retained']} 个，删除 {value['fallback_targets_removed']} 个回退靶点。", f"- selector regret：{100 * value['selector_regret']:.3f}%（95% CI {100 * ci[0]:.3f}% 至 {100 * ci[1]:.3f}%）。", f"- selector 相对 scalar 改善：{100 * value['selector_vs_scalar']['relative_improvement']:.3f}%。", f"- residual 相对 low-rank 改善：{100 * value['residual_program_vs_low_rank']['relative_improvement']:.3f}%。", '']
+    MARKDOWN.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+if __name__ == '__main__':
+    main()

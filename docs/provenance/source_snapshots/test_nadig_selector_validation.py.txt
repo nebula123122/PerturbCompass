@@ -1,0 +1,70 @@
+import importlib.util
+from pathlib import Path
+
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location(
+    "v35_tested", ROOT / "scripts/run_v35_nadig_prospective_selector.py"
+)
+V35 = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+SPEC.loader.exec_module(V35)
+
+
+def test_control_split_is_disjoint_complete_and_order_invariant():
+    names = np.asarray([f"cell-{index:04d}" for index in range(101)], dtype=object)
+    a, b = V35.split_controls(names, 350036)
+    assert len(a) == 51
+    assert len(b) == 50
+    assert set(a).isdisjoint(set(b))
+    assert sorted(np.r_[a, b].tolist()) == list(range(101))
+    permutation = np.random.default_rng(7).permutation(len(names))
+    a2, b2 = V35.split_controls(names[permutation], 350036)
+    assert set(names[a]) == set(names[permutation][a2])
+    assert set(names[b]) == set(names[permutation][b2])
+
+
+def test_confident_selector_chooses_clear_winner():
+    losses = np.column_stack([
+        np.full(256, 0.5),
+        np.full(256, 1.0),
+        np.full(256, 1.2),
+    ])
+    result = V35.choose_selector(
+        losses, ["direct_program", "scalar", "low_rank"], 0.01, 1000, 9, 0.80, True
+    )
+    assert result["mode"] == "confident_single_family"
+    assert result["selected_members"] == ["direct_program"]
+    assert result["leading_probability"] == 1.0
+
+
+def test_uncertain_selector_uses_equivalent_members_plus_scalar():
+    rng = np.random.default_rng(11)
+    base = rng.uniform(0.8, 1.2, 256)
+    losses = np.column_stack([base, base * 1.03, base * 1.005])
+    result = V35.choose_selector(
+        losses, ["direct_program", "scalar", "low_rank"], 0.01, 2000, 12, 1.01, True
+    )
+    assert result["mode"] == "uncertain_equivalence_ensemble"
+    assert set(result["equivalent_families"]) == {"direct_program", "low_rank"}
+    assert set(result["selected_members"]) == {"direct_program", "low_rank", "scalar"}
+
+
+def test_bootstrap_regret_recomputes_oracle_in_each_sample():
+    selector = np.asarray([1.0, 1.0, 1.0, 1.0])
+    families = np.column_stack([
+        np.asarray([0.8, 0.8, 1.2, 1.2]),
+        np.asarray([1.2, 1.2, 0.8, 0.8]),
+    ])
+    values, actual, ci = V35.bootstrap_regret(selector, families, 2000, 17)
+    assert actual == 0.0
+    assert len(values) == 2000
+    assert ci[1] >= 0.0
+
+
+def test_holm_adjustment_is_monotone_in_sorted_order():
+    adjusted = V35.holm_adjust({"hepg2": 0.01, "jurkat": 0.04})
+    assert adjusted["hepg2"] == 0.02
+    assert adjusted["jurkat"] == 0.04

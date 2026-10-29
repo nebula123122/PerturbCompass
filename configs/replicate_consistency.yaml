@@ -1,0 +1,133 @@
+protocol:
+  name: perturbcompass-replicate-consistency
+  version: 1
+  frozen_on: '2026-10-28'
+  status: ready_for_pre_numeric_seal
+  analysis_type: post_v36_blinded_replicate_metadata_adaptive_validation
+parent:
+  confirmation_config: configs/cd4t_confirmation.yaml
+  v36_frozen_config_sha256: e09fbd05221e577a98d532b19c24717faf89e6bd91ffddad92e42437be2629a2
+  v36_pre_numeric_manifest: docs/provenance/cd4t_confirmation/pre_numeric_manifest.json
+  partition: data/processed/cd4t_confirmation/shared_partition.csv
+target:
+  conditions:
+  - Rest
+  - Stim8hr
+  - Stim48hr
+  donor_pairs:
+    path: data/raw/primary_cd4t_replicates/GWCD4i.DE_stats.by_donors.h5mu
+    expected_sha256: 2ee3cf90925600eb044619021da2bdd47d661f306a204586652256facf17af64
+    modalities:
+    - CE0006864_CE0008162
+    - CE0006864_CE0008678
+    - CE0006864_CE0010866
+    - CE0008162_CE0008678
+    - CE0008162_CE0010866
+    - CE0008678_CE0010866
+  guides:
+    path: data/raw/primary_cd4t_replicates/GWCD4i.DE_stats.by_guide.h5mu
+    expected_sha256: 964eeafb3356a7322a1d5b1121802c6a1433456f3591e2d5797817df3bf9c2f6
+    modalities:
+    - guide_1
+    - guide_2
+  effect_layer: log_fc
+frozen_inputs:
+  predownload_config: docs/provenance/replicate_consistency/predownload_protocol.yaml
+  predownload_freeze: docs/provenance/replicate_consistency/replicate_pre_download_freeze.json
+  eligibility_clarification: docs/provenance/replicate_consistency/replicate_eligibility_clarification.json
+  inspector_addendum: docs/provenance/replicate_consistency/replicate_inspector_addendum.json
+  blinded_feasibility_adaptation: docs/provenance/replicate_consistency/blinded_feasibility_adaptation.json
+  metadata_report: docs/provenance/replicate_consistency/replicate_metadata_feasibility.json
+  metadata_report_sha256: 842d7cf6294d2f1548a3b12fbfe2080d0ad2f7a161c21749c3069ff92644d0c6
+  eligibility: data/processed/replicate_consistency/replicate_eligibility.csv
+  eligibility_sha256: dd82bffd96364e89207690e3bd8cff11478c070682b2af505b1925155d7e924b
+model:
+  candidate: residual_program
+  structural_reference: low_rank
+  baseline_reference: scalar
+  training_truth: pooled_v36_anchor_log_fc_only
+  evaluation_truth: heldout_replicate_log_fc_only
+  primary_gene_scope: source_top200_per_target
+  prediction_refitting_on_replicate_data: forbidden
+  heldout_target_use_for_model_selection: forbidden
+replicate_estimands:
+  target_level_difference: reference_mse_minus_candidate_mse
+  guide_consensus: mean_difference_across_guide_1_and_guide_2_within_target_condition
+  donor_pair_consensus: mean_difference_across_available_two_donor_modalities_within_target_condition
+  replicate_direction_requirement:
+    guides: both_guide_modalities_positive_point_estimate
+    donors: at_least_five_of_six_donor_pair_modalities_positive_point_estimate
+  uncertainty:
+    unit: heldout_perturbation_target_within_condition
+    bootstrap_repetitions: 20000
+    seed: 370041
+    interval: percentile_95
+  multiplicity: holm_across_six_context_by_replicate_type_primary_tests
+primary_success_rule:
+  description: in_each_of_three_conditions_both_guide_and_donor_consensus_improvement_CI_lower_bound_above_zero_and_direction_requirement_met
+  intersection_union_across_conditions: true
+  no_combining_conditions_as_independent_studies: true
+quality_separation_diagnostics:
+  status: predeclared_secondary_not_identification_claim
+  reliability_strata_boundaries: estimated_on_anchor_targets_only_then_applied_unchanged_to_heldout_targets
+  reliability_variables:
+  - guide_correlation_all
+  - donor_correlation_all_mean
+  - mean_top200_lfcSE
+  - n_cells_target
+  - n_guides
+  compare_residual_gain_across_reliability_tertiles: true
+  cross_replicate_effect_consistency:
+    guide_profile_correlation: guide_1_vs_guide_2
+    donor_profile_correlation: all_six_pairwise_modalities_reported_with_overlap_warning
+  interpretation:
+    gain_repeated_across_guides_and_donor_subsets: evidence_for_replicate_consistent_biological_component
+    gain_only_in_pooled_or_low_reliability_estimates: evidence_for_measurement_specific_or_unstable_component
+    pure_biology_and_pure_noise_identified: false
+feasibility_counts:
+  Rest:
+    heldout: 485
+    guide_both: 255
+    donor_all_six: 183
+  Stim8hr:
+    heldout: 485
+    guide_both: 285
+    donor_all_six: 217
+  Stim48hr:
+    heldout: 485
+    guide_both: 258
+    donor_all_six: 198
+evaluation:
+  bootstrap_repetitions: 20000
+  bootstrap_seed: 370041
+  sign_flip_repetitions: 100000
+  sign_flip_seed: 370042
+  holm_alpha: 0.05
+  multiplicity: holm_across_six_context_by_replicate_type_primary_tests
+  guide_direction_minimum_positive: 2
+  donor_direction_minimum_positive: 5
+outputs:
+  pre_numeric_manifest: docs/provenance/replicate_consistency/replicate_pre_numeric_manifest.json
+  replicate_metrics: results/reproduced/replicate_consistency/replicate_metrics.csv
+  consensus_metrics: results/reproduced/replicate_consistency/consensus_metrics.csv
+  quality_diagnostics: results/reproduced/replicate_consistency/quality_diagnostics.csv
+  summary_json: results/reproduced/replicate_consistency/replicate_separation_summary.json
+  summary_markdown: results/reproduced/replicate_consistency/replicate_separation_summary.md
+  output_audit: results/reproduced/replicate_consistency/replicate_output_audit.json
+claim_boundary:
+  one_external_study: true
+  donor_pair_modalities_overlap: true
+  guide_disagreement_includes_off_target_and_knockdown_efficiency_not_only_assay_noise: true
+  replicate_consistency_supports_biology_but_does_not_prove_causal_purity: true
+  original_400_guide_and_700_donor_feasibility_gate_failed: true
+  continued_only_under_replicate_outcome_blind_metadata_adaptation: true
+  not_untouched_preregistered_mechanism_confirmation: true
+references:
+- Zhu et al. Cell 2026. doi:10.1016/j.cell.2026.08.002
+- Author data artifact documentation. https://github.com/emdann/GWT_perturbseq_analysis_2025/blob/master/metadata/data_sharing_readme.md
+- Kassis et al. Scientific Agent Skills. doi:10.48550/arXiv.2609.00065
+repository_reorganization:
+  classification: post_result_organizational_refactor_not_new_preregistration
+  original_protocol: docs/provenance/replicate_consistency/original_protocol.yaml
+  historical_records_preserved_without_edits: true
+  reference_results_are_immutable: true

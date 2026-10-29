@@ -1,0 +1,427 @@
+{
+  "stage": "V28 frozen Adamson cross-study K562 confirmation",
+  "generated_at_utc": "2026-10-27T04:12:15.063632+00:00",
+  "core_status": "CROSS_STUDY_CORE_NOT_CONFIRMED",
+  "publication_status": "PUBLICATION_SUPERIORITY_NOT_CONFIRMED",
+  "target_shape": [
+    65337,
+    32738
+  ],
+  "target_qc_cells": 62623,
+  "target_control_cells": 7295,
+  "source_metadata": {
+    "essential": {
+      "eligible_targets": 57,
+      "eligible_target_names": [
+        "AARS",
+        "ATF4",
+        "CARS",
+        "CHERP",
+        "COPB1",
+        "COPZ1",
+        "DAD1",
+        "DARS",
+        "DDOST",
+        "DERL2",
+        "DHDDS",
+        "DNAJC19",
+        "EIF2B2",
+        "EIF2B3",
+        "EIF2B4",
+        "EIF2S1",
+        "FARSB",
+        "GBF1",
+        "GMPPB",
+        "GNPNAT1",
+        "HARS",
+        "HSD17B12",
+        "HSPA5",
+        "HSPA9",
+        "HYOU1",
+        "IARS2",
+        "MANF",
+        "MARS",
+        "MRGBP",
+        "MRPL39",
+        "NEDD8",
+        "PPWD1",
+        "PSMD12",
+        "PSMD4",
+        "QARS",
+        "SAMM50",
+        "SARS",
+        "SEC61A1",
+        "SEC61B",
+        "SEC61G",
+        "SEC63",
+        "SLC35B1",
+        "SLC39A7",
+        "SPCS2",
+        "SPCS3",
+        "SRP68",
+        "SRP72",
+        "SRPRB",
+        "TARS",
+        "TELO2",
+        "TIMM44",
+        "TMED2",
+        "TTI1",
+        "TTI2",
+        "UFL1",
+        "UFM1",
+        "XRN1"
+      ],
+      "common_measured_genes": 7882,
+      "control_fold_sizes": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ],
+      "random_program_exact_p": 0.0196078431372549,
+      "random_program_mean_mse_quantiles": [
+        0.015621777152825825,
+        0.015762683162576407,
+        0.015899308680574254
+      ]
+    },
+    "gwps": {
+      "eligible_targets": 64,
+      "eligible_target_names": [
+        "AARS",
+        "ARHGAP22",
+        "CAD",
+        "CARS",
+        "CCND3",
+        "CHERP",
+        "COPB1",
+        "COPZ1",
+        "DAD1",
+        "DARS",
+        "DDOST",
+        "DDRGK1",
+        "DERL2",
+        "DHDDS",
+        "DNAJC19",
+        "EIF2B3",
+        "EIF2S1",
+        "FARSB",
+        "GBF1",
+        "GNPNAT1",
+        "HARS",
+        "HSD17B12",
+        "HSPA9",
+        "HYOU1",
+        "IARS2",
+        "IDH3A",
+        "MANF",
+        "MARS",
+        "MRGBP",
+        "MTHFD1",
+        "NEDD8",
+        "P4HB",
+        "PDIA6",
+        "PPWD1",
+        "PSMD12",
+        "PSMD4",
+        "PTDSS1",
+        "QARS",
+        "SARS",
+        "SEC61A1",
+        "SEC61G",
+        "SEC63",
+        "SEL1L",
+        "SLC35B1",
+        "SOCS1",
+        "SPCS2",
+        "SRP68",
+        "SRP72",
+        "SRPRB",
+        "STT3A",
+        "SYVN1",
+        "TARS",
+        "TELO2",
+        "TIMM44",
+        "TMED10",
+        "TMED2",
+        "TMEM167A",
+        "TTI1",
+        "TTI2",
+        "UFL1",
+        "UFM1",
+        "XBP1",
+        "XRN1",
+        "YIPF5"
+      ],
+      "common_measured_genes": 7619,
+      "control_fold_sizes": [
+        {
+          "fold": 0,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 1,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 2,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 3,
+          "train": 5836,
+          "test": 1459
+        },
+        {
+          "fold": 4,
+          "train": 5836,
+          "test": 1459
+        }
+      ],
+      "random_program_exact_p": 0.0196078431372549,
+      "random_program_mean_mse_quantiles": [
+        0.015041186492986578,
+        0.01520207685720363,
+        0.015381186412647954
+      ]
+    }
+  },
+  "comparisons": [
+    {
+      "source": "essential",
+      "comparator": "identity",
+      "improvement": 0.9720640060907464,
+      "ci95": [
+        0.9637913973956563,
+        0.977869892729116
+      ],
+      "sign_flip_p": 1.999960000799984e-05,
+      "targets_improved_fraction": 1.0,
+      "holm_adjusted_p": 9.99980000399992e-05
+    },
+    {
+      "source": "essential",
+      "comparator": "global",
+      "improvement": 0.06396403790986904,
+      "ci95": [
+        0.01061740329814879,
+        0.10959427614949795
+      ],
+      "sign_flip_p": 0.014679706405871882,
+      "targets_improved_fraction": 0.6140350877192983,
+      "holm_adjusted_p": 0.05871882562348753
+    },
+    {
+      "source": "essential",
+      "comparator": "scalar",
+      "improvement": 0.052838860957966416,
+      "ci95": [
+        0.0006961401558260273,
+        0.09503981826703166
+      ],
+      "sign_flip_p": 0.028699426011479772,
+      "targets_improved_fraction": 0.5964912280701754,
+      "holm_adjusted_p": 0.08609827803443931
+    },
+    {
+      "source": "essential",
+      "comparator": "gene_ridge",
+      "improvement": -0.07723669673804734,
+      "ci95": [
+        -0.25672371094151725,
+        0.05245675054314367
+      ],
+      "sign_flip_p": 0.8610427791444171,
+      "targets_improved_fraction": 0.42105263157894735,
+      "holm_adjusted_p": 1.0
+    },
+    {
+      "source": "essential",
+      "comparator": "low_rank",
+      "improvement": -0.12533244515135578,
+      "ci95": [
+        -0.34842278313392727,
+        0.04098051780234166
+      ],
+      "sign_flip_p": 0.9175616487670246,
+      "targets_improved_fraction": 0.42105263157894735,
+      "holm_adjusted_p": 1.0
+    },
+    {
+      "source": "gwps",
+      "comparator": "identity",
+      "improvement": 0.9679812550937985,
+      "ci95": [
+        0.961629351397833,
+        0.9727999019195768
+      ],
+      "sign_flip_p": 1.999960000799984e-05,
+      "targets_improved_fraction": 1.0,
+      "holm_adjusted_p": 9.99980000399992e-05
+    },
+    {
+      "source": "gwps",
+      "comparator": "global",
+      "improvement": 0.08192862136160306,
+      "ci95": [
+        -0.02682024907248026,
+        0.16564189298451895
+      ],
+      "sign_flip_p": 0.07195856082878342,
+      "targets_improved_fraction": 0.53125,
+      "holm_adjusted_p": 0.21587568248635025
+    },
+    {
+      "source": "gwps",
+      "comparator": "scalar",
+      "improvement": 0.12018293597133456,
+      "ci95": [
+        0.03706918551005526,
+        0.1902437984340049
+      ],
+      "sign_flip_p": 0.006059878802423951,
+      "targets_improved_fraction": 0.5625,
+      "holm_adjusted_p": 0.024239515209695806
+    },
+    {
+      "source": "gwps",
+      "comparator": "gene_ridge",
+      "improvement": -0.029490557576134613,
+      "ci95": [
+        -0.28341148615349776,
+        0.13999090436782796
+      ],
+      "sign_flip_p": 0.6048279034419312,
+      "targets_improved_fraction": 0.421875,
+      "holm_adjusted_p": 1.0
+    },
+    {
+      "source": "gwps",
+      "comparator": "low_rank",
+      "improvement": -0.07764624883406657,
+      "ci95": [
+        -0.39043194624387684,
+        0.13447854185529529
+      ],
+      "sign_flip_p": 0.7283054338913222,
+      "targets_improved_fraction": 0.40625,
+      "holm_adjusted_p": 1.0
+    }
+  ],
+  "primary_secondary_gene_set_improvements_over_scalar": {
+    "top100": 0.02968916179513348,
+    "top500": 0.07856618911993896,
+    "all": 0.06911870729930558
+  },
+  "rankings": {
+    "essential": [
+      {
+        "method": "low_rank",
+        "mean_mse_top200": 0.013436262644909061
+      },
+      {
+        "method": "gene_ridge",
+        "mean_mse_top200": 0.014036155973591145
+      },
+      {
+        "method": "program",
+        "mean_mse_top200": 0.015120262295891336
+      },
+      {
+        "method": "scalar",
+        "mean_mse_top200": 0.01596376970362624
+      },
+      {
+        "method": "global",
+        "mean_mse_top200": 0.016153505750065834
+      },
+      {
+        "method": "identity",
+        "mean_mse_top200": 0.5412466205787241
+      }
+    ],
+    "gwps": [
+      {
+        "method": "low_rank",
+        "mean_mse_top200": 0.013013707663958485
+      },
+      {
+        "method": "gene_ridge",
+        "mean_mse_top200": 0.013622439899309969
+      },
+      {
+        "method": "program",
+        "mean_mse_top200": 0.014024173247488003
+      },
+      {
+        "method": "global",
+        "mean_mse_top200": 0.015275689422196592
+      },
+      {
+        "method": "scalar",
+        "mean_mse_top200": 0.015939874118003104
+      },
+      {
+        "method": "identity",
+        "mean_mse_top200": 0.4379988437576685
+      }
+    ]
+  },
+  "gates": {
+    "minimum_targets": true,
+    "improvement": true,
+    "bootstrap_ci": true,
+    "holm_sign_flip": false,
+    "target_fraction": true,
+    "secondary_gene_sets": true,
+    "random_program": true,
+    "sensitivity_source": true
+  },
+  "publication_gates": {
+    "below_gene_ridge": false,
+    "below_low_rank": false,
+    "gene_ridge_holm": false,
+    "low_rank_holm": false
+  },
+  "claim_boundary": {
+    "same_cell_line": "K562",
+    "same_intervention_class": "CRISPRi",
+    "source_study": "Replogle et al. 2022",
+    "target_study": "Adamson et al. 2016",
+    "held_out_target_prediction_not_zero_shot_study_transfer": true,
+    "target_training_perturbations_are_used_for_cross_study_calibration": true,
+    "target_control_cells_are_used_to_construct_outcomes_not_as_predictor_features": true,
+    "control_cells_are_split_to_prevent_shared_control_noise_leakage": true,
+    "primary_claim_is_cross_study_program_shrinkage_benefit_over_scalar_calibration": true
+  },
+  "output_hashes": {
+    "record_metrics": "50ceb7d43e0fa0d8a171f37eb0b294666746bac854a7b9a6ae7d156e22fa00d7",
+    "bootstrap_metrics": "43c45b89c2b3209c8caab70e394005c63b2031bdee5ae4821f11f07f483818c9",
+    "sign_flip_metrics": "97b3f3f36b1b4c7ea7510b57cc48c5f029c50d441135368f23be6553ef0dd680",
+    "random_program_metrics": "becbe2ab3582a72674ffad5daaccaaae189147dc8c5299c76a4fe6e71b96a690"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "status": "V38_SOURCE_ONLY_CLUSTER_FEASIBILITY_ADAPTATION_FROZEN_BEFORE_TARGET_NUMERIC_ACCESS",
+  "frozen_at_utc": "2026-10-28T06:53:56.498936+00:00",
+  "v38_target_numeric_layers_read": false,
+  "trigger": "The original 8-cluster source-only partition had one cluster with 37 heldout targets, below the frozen minimum of 40.",
+  "original_cluster_count": 8,
+  "original_size_thresholds_unchanged": {
+    "minimum_training_anchors_per_fold": 160,
+    "minimum_test_targets_per_cluster": 40
+  },
+  "candidate_cluster_counts_in_order": [
+    8,
+    7,
+    6,
+    5
+  ],
+  "selection_rule": "choose the largest candidate count satisfying both original size thresholds for every cluster",
+  "svd_dimension_seeds_clustering_algorithm_and_n_init_unchanged": true,
+  "primary_regret_estimand_and_5pct_success_threshold_unchanged": true,
+  "secondary_absolute_rule_remains_at_least_six_positive_clusters": true,
+  "analysis_classification": "post_v36_but_v38_target_outcome_blind_source_feasibility_adaptation",
+  "patched_prepare_sha256": "136ba4830738a3351089baa653eed7e0449398b1ae2ce16a2216908393a392f2"
+}

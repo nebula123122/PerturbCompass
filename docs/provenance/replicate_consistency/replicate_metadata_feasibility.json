@@ -1,0 +1,46 @@
+{
+  "status": "V37_REPLICATE_METADATA_ONLY_FEASIBILITY_PASS",
+  "replicate_outcome_layers_read": false,
+  "guide_modalities": [
+    "guide_1",
+    "guide_2"
+  ],
+  "donor_modalities": [
+    "CE0006864_CE0008162",
+    "CE0006864_CE0008678",
+    "CE0006864_CE0010866",
+    "CE0008162_CE0008678",
+    "CE0008162_CE0010866",
+    "CE0008678_CE0010866"
+  ],
+  "heldout_targets": 485,
+  "condition_counts": {
+    "Rest": {
+      "heldout": 485,
+      "guide_both": 255,
+      "donor_all_six": 183
+    },
+    "Stim8hr": {
+      "heldout": 485,
+      "guide_both": 285,
+      "donor_all_six": 217
+    },
+    "Stim48hr": {
+      "heldout": 485,
+      "guide_both": 258,
+      "donor_all_six": 198
+    }
+  },
+  "original_feasibility_gate_passed": false,
+  "blinded_adaptive_feasibility_gate_passed": true,
+  "feasibility_adaptation_sha256": "ec18cd41b2a7a11e9f5cdb50668512853b7c45287e1173c3ed904ac78abfbe34",
+  "guide_sha256": "964eeafb3356a7322a1d5b1121802c6a1433456f3591e2d5797817df3bf9c2f6",
+  "donor_sha256": "2ee3cf90925600eb044619021da2bdd47d661f306a204586652256facf17af64",
+  "eligibility_csv": "data/derived/v37_cd4t_replicates/v37_replicate_eligibility.csv",
+  "eligibility_sha256": "dd82bffd96364e89207690e3bd8cff11478c070682b2af505b1925155d7e924b",
+  "claim_boundary": {
+    "labels_only_read": true,
+    "log_fc_lfcSE_zscore_pvalues_and_all_other_numeric_layers_unread": true,
+    "donor_modalities_overlap": true
+  }
+}

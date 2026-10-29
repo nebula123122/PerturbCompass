@@ -1,0 +1,96 @@
+{
+  "generated_at_utc": "2026-10-28T16:08:38.356347+00:00",
+  "classification": "post_result_refactor_regression_check",
+  "synthetic_fixture": {
+    "seed": 841021,
+    "targets": 72,
+    "response_genes": 96,
+    "train_targets": 48,
+    "program_count": 16
+  },
+  "five_family_max_absolute_prediction_difference": {
+    "low_rank": 0.0,
+    "gene_ridge": 0.0,
+    "scalar": 0.0,
+    "direct_program": 0.0,
+    "residual_program": 0.0
+  },
+  "heldout_truth_mutation_does_not_change_predictions": true,
+  "bootstrap_probability_weights_identical_to_original": true,
+  "source_only_anchor_order_identical_to_original": true,
+  "reference_table_reconciliation": {
+    "status": "REFERENCE_RESULTS_RECONCILED",
+    "conditions": {
+      "Rest": {
+        "heldout_targets": 485,
+        "selector_regret": -0.00818603590512268,
+        "anchor_32_vs_256_relative_mse_increase": 0.013585205246153809
+      },
+      "Stim8hr": {
+        "heldout_targets": 485,
+        "selector_regret": -0.009421207500229123,
+        "anchor_32_vs_256_relative_mse_increase": 0.01563174069121187
+      },
+      "Stim48hr": {
+        "heldout_targets": 485,
+        "selector_regret": 0.002401014202797702,
+        "anchor_32_vs_256_relative_mse_increase": 0.003564513796564084
+      }
+    },
+    "full_budget_max_absolute_difference": 0.0
+  },
+  "full_raw_to_result_rerun": "CD4 T primary analysis rerun from retained author source/target artifacts; other model analyses validated by tests and shared-function equivalence, not all rerun.",
+  "retained_tests": {
+    "passed": true,
+    "count": 42,
+    "command": "python -m pytest -q",
+    "scope": "retained scientific tests, result-table identities, evidence hashes and heldout-truth firewall"
+  },
+  "entrypoint_validation_note": "The first full confirmation replay caught a module alias/local list collision before model fitting; alias corrected in staging; locked reference outputs unchanged.",
+  "portable_release_test": {
+    "passed": true,
+    "raw_data_present": false,
+    "git_history_present": false,
+    "test_count": 42,
+    "archive_bytes": 24843485
+  },
+  "real_cd4t_confirmation_rerun": {
+    "passed": true,
+    "source_and_target_sha256_verified_before_fit": true,
+    "heldout_rows": 1455,
+    "numeric_loss_columns": 24,
+    "maximum_absolute_loss_difference": 3.163652583237919e-07,
+    "comparison_tolerance": {
+      "rtol": 0,
+      "atol": 1e-06
+    },
+    "maximum_absolute_regret_difference": 5.654341328487078e-09,
+    "apma_modes_and_weights_unchanged": true,
+    "joint_gate_unchanged": true,
+    "thread_settings": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "interpretation": "Small floating-point differences relative to historical execution; scientific gates and model-average weights unchanged. Reference results were not overwritten."
+  },
+  "overview_index_paths_checked": 39,
+  "overview_index_missing_paths": [],
+  "history_records": 424,
+  "post_activation_check": {
+    "checked_at_utc": "2026-10-28T16:30:05.606485+00:00",
+    "tests_passed": 42,
+    "installed_package_root_correct": true,
+    "small_artifact_counts": {
+      "reorganized_code_manifest.json": 43,
+      "immutable_artifacts.json": 149
+    },
+    "raw_input_sizes_checked": 11,
+    "overview_paths_checked": 39,
+    "reference_results_reconciled": true,
+    "legacy_version_file_names_in_release": 0,
+    "original_exploratory_directories_absent": true,
+    "public_file_count": 214,
+    "public_uncompressed_bytes": 78378223
+  }
+}
